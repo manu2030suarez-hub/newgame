@@ -305,6 +305,102 @@ export function createCave(THREE, scene, beach, opts = {}) {
   teal.position.set(1.2, 0.6, -7.5);
   group.add(teal);
 
+
+  // ---- Ecosistema subterráneo: estalactitas, musgo bioluminiscente, charca y cristales ----
+  const caveDecor = new THREE.Group();
+  group.add(caveDecor);
+  const wetRockMat = new THREE.MeshStandardMaterial({ color: 0x4c514b, map: tex, bumpMap: tex, bumpScale: 1.9, roughness: 0.42, metalness: 0.04 });
+  const mossMat = new THREE.MeshStandardMaterial({ color: 0x315b43, roughness: 1, vertexColors: false });
+  const glowMossMat = new THREE.MeshStandardMaterial({ color: 0x347c68, emissive: 0x126b56, emissiveIntensity: 1.15, roughness: .92 });
+  const crystalMats = [
+    new THREE.MeshStandardMaterial({ color: 0x63d9c5, emissive: 0x1a9d8a, emissiveIntensity: 1.45, roughness: .2, metalness: .12, transparent: true, opacity: .94 }),
+    new THREE.MeshStandardMaterial({ color: 0x8b9dff, emissive: 0x384bd0, emissiveIntensity: 1.25, roughness: .18, metalness: .1, transparent: true, opacity: .92 })
+  ];
+  const crystalNodes = [];
+  function addCrystalCluster(x, z, seed, count = 5) {
+    const root = new THREE.Group(); root.position.set(x, .12, z); caveDecor.add(root);
+    for (let i = 0; i < count; i++) {
+      const h = .42 + h2(seed, i + 4) * .9, r = .12 + h2(seed + 8, i + 2) * .13;
+      const geo = new THREE.ConeGeometry(r, h, 5 + (i % 2));
+      const p = geo.attributes.position;
+      for (let j = 0; j < p.count; j++) {
+        const k = 1 + (h2(seed + j, i + 9) - .5) * .18;
+        p.setX(j, p.getX(j) * k); p.setZ(j, p.getZ(j) * k);
+      }
+      geo.computeVertexNormals();
+      const m = new THREE.Mesh(geo, crystalMats[(seed + i) % crystalMats.length]);
+      m.position.set((h2(seed, i) - .5) * .58, h * .48, (h2(seed + 2, i) - .5) * .48);
+      m.rotation.z = (h2(seed + 3, i) - .5) * .22; m.rotation.x = (h2(seed + 5, i) - .5) * .18;
+      m.castShadow = true; root.add(m);
+    }
+    const glow = new THREE.PointLight(seed % 2 ? 0x55d9c6 : 0x7788ff, 1.05, 5.2, 2);
+    glow.position.set(0, .65, 0); root.add(glow);
+    crystalNodes.push({ root, x, z, collected: false, glow });
+  }
+  addCrystalCluster(3.9, -5.9, 17, 6);
+  addCrystalCluster(-4.4, 5.8, 29, 5);
+  addCrystalCluster(7.2, 1.5, 43, 7);
+
+  // Colgantes de roca con puntas fracturadas y vetas húmedas.
+  for (let i = 0; i < 17; i++) {
+    const a = i * 2.399, r = 5.2 + h2(i, 21) * 5.4;
+    const x = Math.cos(a) * r, z = Math.sin(a) * r;
+    const h = .45 + h2(i, 23) * 1.45;
+    const geo = new THREE.ConeGeometry(.18 + h2(i, 25) * .22, h, 6, 2);
+    const stal = new THREE.Mesh(geo, wetRockMat);
+    stal.position.set(x, 5.4 + h * .38, z); stal.rotation.x = Math.PI + (h2(i, 27) - .5) * .16;
+    stal.rotation.z = (h2(i, 28) - .5) * .18; stal.castShadow = true; stal.receiveShadow = true;
+    caveDecor.add(stal);
+  }
+  // Musgo y hongos pequeños pegados a las paredes bajas.
+  for (let i = 0; i < 42; i++) {
+    const a = i * 2.399, r = 8.1 + h2(i, 31) * 3.1, x = Math.cos(a) * r, z = Math.sin(a) * r;
+    const patch = new THREE.Mesh(new THREE.SphereGeometry(.18 + h2(i, 33) * .26, 7, 5), i % 4 === 0 ? glowMossMat : mossMat);
+    patch.position.set(x, .13 + h2(i, 34) * .12, z); patch.scale.set(1.8, .42, .8); patch.rotation.y = a;
+    caveDecor.add(patch);
+    if (i % 7 === 0) {
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(.025, .04, .22, 7), new THREE.MeshStandardMaterial({ color: 0xd0c3a1, roughness: .9 }));
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(.12, 8, 6), new THREE.MeshStandardMaterial({ color: 0x9b654e, roughness: .8, emissive: 0x24100a, emissiveIntensity: .25 }));
+      stem.position.set(x + .22, .25, z); cap.position.set(x + .22, .37, z); cap.scale.y = .48;
+      caveDecor.add(stem, cap);
+    }
+  }
+  // Charca subterránea: superficie oscura, reflejo turquesa y ondas muy suaves.
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(2.15, 48), new THREE.MeshPhysicalMaterial({ color: 0x163f43, roughness: .16, metalness: .16, clearcoat: .9, clearcoatRoughness: .12, transparent: true, opacity: .88 }));
+  pool.rotation.x = -Math.PI / 2; pool.position.set(-1.4, .035, -1.2); caveDecor.add(pool);
+  const poolRim = new THREE.Mesh(new THREE.TorusGeometry(2.17, .075, 8, 48), wetRockMat);
+  poolRim.rotation.x = Math.PI / 2; poolRim.position.copy(pool.position); poolRim.position.y += .015; caveDecor.add(poolRim);
+  const poolLight = new THREE.PointLight(0x2d9e9a, 1.2, 8, 2); poolLight.position.set(-1.4, .65, -1.2); caveDecor.add(poolLight);
+
+  // Cofre de explorador oculto en un recoveco: recompensa única.
+  const chestRoot = new THREE.Group(); chestRoot.position.set(-7.1, .13, -2.1); chestRoot.rotation.y = -.48; caveDecor.add(chestRoot);
+  const chestWood = new THREE.MeshStandardMaterial({ color: 0x60402a, map: tex, roughness: .82 });
+  const chestIron = new THREE.MeshStandardMaterial({ color: 0x6e7778, metalness: .72, roughness: .34 });
+  const chestBase = new THREE.Mesh(new THREE.BoxGeometry(1.25, .62, .82), chestWood); chestBase.position.y = .34; chestBase.castShadow = true; chestRoot.add(chestBase);
+  const lidPivot = new THREE.Group(); lidPivot.position.set(0, .65, -.39); chestRoot.add(lidPivot);
+  const chestLid = new THREE.Mesh(new THREE.BoxGeometry(1.25, .22, .82), chestWood); chestLid.position.set(0, .02, .39); chestLid.castShadow = true; lidPivot.add(chestLid);
+  for (const x of [-.48, .48]) {
+    const band = new THREE.Mesh(new THREE.BoxGeometry(.09, .78, .86), chestIron); band.position.set(x, .36, 0); chestRoot.add(band);
+  }
+  const lock = new THREE.Mesh(new THREE.BoxGeometry(.16, .19, .045), chestIron); lock.position.set(0, .47, .43); chestRoot.add(lock);
+  const chestGlow = new THREE.PointLight(0xffc66e, .42, 4.5, 2); chestGlow.position.set(0, .9, 0); chestRoot.add(chestGlow);
+  const chest = { root: chestRoot, lidPivot, opened: false, x: chestRoot.position.x, z: chestRoot.position.z };
+  const caveDrops = crystalNodes;
+  const getInteraction = (playerPos) => {
+    if (!playerPos) return null;
+    let best = null, bestD = 3.0;
+    for (const node of caveDrops) {
+      if (node.collected) continue;
+      const d = Math.hypot(playerPos.x - (cx + node.x), playerPos.z - (cz + node.z));
+      if (d < bestD) { bestD = d; best = { type: 'crystal', distance: d, node }; }
+    }
+    if (!chest.opened) {
+      const d = Math.hypot(playerPos.x - (cx + chest.x), playerPos.z - (cz + chest.z));
+      if (d < 3.2 && d < bestD) best = { type: 'chest', distance: d, chest };
+    }
+    return best;
+  };
+
   let t = 0;
   function update(dt, time) {
     const safeDt = Number.isFinite(dt) ? Math.min(dt, 0.1) : 0.016;
@@ -325,8 +421,32 @@ export function createCave(THREE, scene, beach, opts = {}) {
     warm.intensity = 24 * day;
     teal.intensity = (18 + Math.sin(t * 1.7) * 3 + Math.sin(t * 2.9) * 2) * day;
     teal.position.x = 1.2 + Math.sin(t * 0.6) * 1.5;
+    crystalNodes.forEach((node, i) => {
+      if (node.collected) return;
+      node.root.children.forEach((part, j) => { if (part.isMesh && part.geometry.type === 'ConeGeometry') part.rotation.y = Math.sin(t * 1.1 + i + j) * .035; });
+      node.glow.intensity = .82 + Math.sin(t * 2.2 + i) * .22;
+    });
+    poolLight.intensity = 1.0 + Math.sin(t * 1.35) * .18;
+    chestGlow.intensity = chest.opened ? .9 : .34 + Math.sin(t * 1.7) * .08;
+  }
+
+  function interact(playerPos) {
+    const target = getInteraction(playerPos);
+    if (!target) return null;
+    if (target.type === 'crystal') {
+      target.node.collected = true;
+      target.node.root.visible = false;
+      return { type: 'crystal', amount: 1 };
+    }
+    if (target.type === 'chest') {
+      chest.opened = true;
+      chest.lidPivot.rotation.x = -1.12;
+      chestGlow.intensity = 1.8;
+      return { type: 'chest', medicine: 2, crystals: 3, relic: 1 };
+    }
+    return null;
   }
 
   update(0, 0);
-  return { group, update, isInside, center: { x: cx, z: cz }, radius: RH };
+  return { group, update, isInside, getInteraction, interact, center: { x: cx, z: cz }, radius: RH };
 }
