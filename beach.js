@@ -738,6 +738,97 @@ function create(scene, renderer, opts = {}) {
   grass.frustumCulled = false;
   scene.add(grass);
 
+
+  // Selva profunda: queda detrás de la cordillera de dunas, en el extremo opuesto de la playa de palmeras.
+  // La vegetación se agrupa en instancias para mantener un coste razonable en equipos modestos.
+  const jungleGroup = new THREE.Group();
+  jungleGroup.name = 'deep-jungle';
+  scene.add(jungleGroup);
+  const jungleRand = mulberry32(731942);
+  const jungleCenter = { x: 94, z: 137 };
+  const jungleTrees = [];
+  const jungleTreeCount = 126;
+  const trunkGeo = new THREE.CylinderGeometry(.24, .62, 1, 9, 3);
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x59402b, roughness: .96 });
+  const canopyGeo = new THREE.IcosahedronGeometry(1, 2);
+  const canopyMat = new THREE.MeshStandardMaterial({ color: 0x31552b, roughness: .94, vertexColors: true });
+  const understoryGeo = new THREE.IcosahedronGeometry(1, 1);
+  const understoryMat = new THREE.MeshStandardMaterial({ color: 0x456b32, roughness: 1, vertexColors: true });
+  const trees = [];
+  for (let tries = 0; trees.length < jungleTreeCount && tries < 5000; tries++) {
+    const a = jungleRand() * Math.PI * 2;
+    const r = Math.sqrt(jungleRand());
+    const x = jungleCenter.x + Math.cos(a) * r * 76;
+    const z = jungleCenter.z + Math.sin(a) * r * 25;
+    if (z < 111 || z > 149 || x < 14 || x > 174) continue;
+    // Dejar un claro de llegada para que el personaje no aparezca dentro de un tronco.
+    if (Math.hypot(x - 94, z - 145) < 10.5) continue;
+    if (trees.some(p => Math.hypot(p.x - x, p.z - z) < 3.7)) continue;
+    const ground = terrainH(x, z);
+    const slopeX = terrainH(x + 1, z) - terrainH(x - 1, z);
+    const slopeZ = terrainH(x, z + 1) - terrainH(x, z - 1);
+    if (Math.hypot(slopeX, slopeZ) > 2.0) continue;
+    trees.push({ x, z, y: ground - .12, h: 10.5 + jungleRand() * 7.5, rot: jungleRand() * Math.PI * 2, crown: 3.1 + jungleRand() * 1.8 });
+  }
+  const jungleTrunks = new THREE.InstancedMesh(trunkGeo, trunkMat, trees.length);
+  const canopyInstances = trees.length * 6;
+  const jungleCanopy = new THREE.InstancedMesh(canopyGeo, canopyMat, canopyInstances);
+  const undergrowth = new THREE.InstancedMesh(understoryGeo, understoryMat, trees.length * 3);
+  const jungleMatrix = new THREE.Matrix4(), junglePos = new THREE.Vector3(), jungleScale = new THREE.Vector3(), jungleQuat = new THREE.Quaternion();
+  let canopyIndex = 0, underIndex = 0;
+  const leafColors = [0x244a25, 0x315b2c, 0x3d6833, 0x496f36, 0x294f2b];
+  const underColors = [0x3e642f, 0x587b39, 0x31552c, 0x6b8741];
+  trees.forEach((tree, ti) => {
+    junglePos.set(tree.x, tree.y + tree.h * .5, tree.z);
+    jungleScale.set(1, tree.h, 1);
+    jungleQuat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), tree.rot);
+    jungleMatrix.compose(junglePos, jungleQuat, jungleScale);
+    jungleTrunks.setMatrixAt(ti, jungleMatrix);
+    colliders.push({ x: tree.x, z: tree.z, r: .52, rx: .58, rz: .58, bottom: tree.y, top: tree.y + tree.h });
+    for (let k = 0; k < 6; k++) {
+      const ang = k / 6 * Math.PI * 2 + tree.rot;
+      const spread = tree.crown * (.35 + (k % 3) * .12);
+      junglePos.set(tree.x + Math.cos(ang) * spread, tree.y + tree.h * (.73 + (k % 2) * .055), tree.z + Math.sin(ang) * spread);
+      jungleScale.set(tree.crown * (.72 + jungleRand() * .24), tree.crown * (.52 + jungleRand() * .20), tree.crown * (.72 + jungleRand() * .24));
+      jungleQuat.setFromEuler(new THREE.Euler((jungleRand() - .5) * .22, jungleRand() * Math.PI, (jungleRand() - .5) * .22));
+      jungleMatrix.compose(junglePos, jungleQuat, jungleScale);
+      jungleCanopy.setMatrixAt(canopyIndex, jungleMatrix);
+      jungleCanopy.setColorAt(canopyIndex, new THREE.Color(leafColors[(jungleRand() * leafColors.length) | 0]));
+      canopyIndex++;
+    }
+    for (let k = 0; k < 3; k++) {
+      const ang = jungleRand() * Math.PI * 2;
+      junglePos.set(tree.x + Math.cos(ang) * (1.3 + jungleRand() * 1.2), tree.y + .48 + jungleRand() * .5, tree.z + Math.sin(ang) * (1.3 + jungleRand() * 1.2));
+      const size = 1.1 + jungleRand() * 1.0;
+      jungleScale.set(size * 1.25, .75 + jungleRand() * .45, size);
+      jungleQuat.setFromEuler(new THREE.Euler(jungleRand() * .3, ang, jungleRand() * .3));
+      jungleMatrix.compose(junglePos, jungleQuat, jungleScale);
+      undergrowth.setMatrixAt(underIndex, jungleMatrix);
+      undergrowth.setColorAt(underIndex, new THREE.Color(underColors[(jungleRand() * underColors.length) | 0]));
+      underIndex++;
+    }
+  });
+  jungleTrunks.castShadow = jungleTrunks.receiveShadow = true;
+  jungleCanopy.castShadow = jungleCanopy.receiveShadow = true;
+  undergrowth.castShadow = true;
+  jungleTrunks.frustumCulled = jungleCanopy.frustumCulled = undergrowth.frustumCulled = false;
+  jungleGroup.add(jungleTrunks, jungleCanopy, undergrowth);
+
+  // Troncos caídos y vegetación baja rompen la regularidad del bosque.
+  const fallenGeo = new THREE.CylinderGeometry(.28, .38, 1, 8);
+  const fallenMat = new THREE.MeshStandardMaterial({ color: 0x493b2b, roughness: 1 });
+  const fallenLogs = new THREE.InstancedMesh(fallenGeo, fallenMat, 16);
+  for (let k = 0; k < 16; k++) {
+    const a = jungleRand() * Math.PI * 2, r = 8 + Math.sqrt(jungleRand()) * 61;
+    const x = jungleCenter.x + Math.cos(a) * r, z = jungleCenter.z + Math.sin(a) * r * .32;
+    const y = terrainH(x, z) + .25, length = 2.2 + jungleRand() * 3.6;
+    junglePos.set(x, y, z); jungleScale.set(.8 + jungleRand() * .4, length, .8 + jungleRand() * .4);
+    jungleQuat.setFromEuler(new THREE.Euler(0, jungleRand() * Math.PI * 2, Math.PI / 2 + (jungleRand() - .5) * .18));
+    jungleMatrix.compose(junglePos, jungleQuat, jungleScale); fallenLogs.setMatrixAt(k, jungleMatrix);
+  }
+  fallenLogs.castShadow = true; fallenLogs.receiveShadow = true; fallenLogs.frustumCulled = false;
+  jungleGroup.add(fallenLogs);
+
   let audio = null, muted = false;
   function startAudio(ctx) {
     if (audio || !ctx) return;
