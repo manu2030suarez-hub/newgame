@@ -2097,7 +2097,7 @@ function startTorchIgnition(){
   if(!torchOwned||torchFuel<=0){setStatus('Necesitas fabricar una antorcha nueva con B.');return;}
   if(!torchFlame||!torchTool){setStatus('Equipa la antorcha para acercar su punta al fuego.');return;}
   torchTool.updateWorldMatrix(true,false);torchFlame.getWorldPosition(_v);
-  const fire=campfires.find(f=>f.lit&&Math.hypot(f.x-_v.x,f.z-_v.z)<1.45&&Math.abs((f.root.position.y+.65)-_v.y)<1.65);
+  const fire=campfires.find(f=>f.lit&&Math.hypot(f.x-_v.x,f.z-_v.z)<.95&&Math.abs((f.root.position.y+.65)-_v.y)<1.65);
   if(!fire){setStatus('Acercá la punta de la antorcha hasta las llamas de la fogata.');return;}
   if(torchLit){setStatus('La antorcha ya está encendida.');return;}
   if(rainActive){setStatus('No podés prenderla bajo la lluvia. Busca refugio y espera que pare.');return;}
