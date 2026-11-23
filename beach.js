@@ -551,10 +551,10 @@ function create(scene, renderer, opts = {}) {
     sh.uniforms.uTime = uTime;
     sh.uniforms.uJungleGrassMap = { value: jungleGrassMap };
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\\nvarying float vH;varying vec2 vXZ;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\\nvH=position.y;vXZ=position.xz;');
+      .replace('#include <common>', '#include <common>\nvarying float vH;varying vec2 vXZ;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvH=position.y;vXZ=position.xz;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', `#include <common>\\nvarying float vH;varying vec2 vXZ;uniform float uTime;uniform sampler2D uJungleGrassMap;\\n${GLSL_NOISE}`)
+      .replace('#include <common>', `#include <common>\nvarying float vH;varying vec2 vXZ;uniform float uTime;uniform sampler2D uJungleGrassMap;\n${GLSL_NOISE}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
         // Césped de selva: máscara orgánica y transición suave hacia la arena.
         vec2 jungleP=vec2((vXZ.x-94.)/82.,(vXZ.y-137.)/25.);
@@ -572,7 +572,7 @@ function create(scene, renderer, opts = {}) {
         float bwFoam=smoothstep(bwEdge-.10,bwEdge-.02,vH)*(1.-smoothstep(bwEdge-.02,bwEdge,vH));
         diffuseColor.rgb*=mix(1.,.62,max(bwWet*.8,bwFilm)*(1.-jungleMask));
         diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.93),bwFoam*.55*(.5+bwN)*(1.-jungleMask));`)
-      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\\nroughnessFactor=mix(roughnessFactor,.18,max(bwWet*.6,bwFilm));roughnessFactor=mix(roughnessFactor,.96,jungleMask);');
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor=mix(roughnessFactor,.18,max(bwWet*.6,bwFilm));roughnessFactor=mix(roughnessFactor,.96,jungleMask);');
   };
   const terrain = new THREE.Mesh(tgeo, sandMat);
   terrain.receiveShadow = true;
