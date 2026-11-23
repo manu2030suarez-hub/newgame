@@ -405,12 +405,12 @@ function createShipwreck(scene, {
   scene.add(group);
 
   const rampMat = new THREE.MeshStandardMaterial({
-    color: 0x6b533b,
+    color: 0xff2d55, // MARCADOR VISUAL: cambiar este color en cada actualización
     roughness: 0.9,
     metalness: 0.05,
   });
   const ramp = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.24, 5.4), rampMat);
-  ramp.position.set(8.8, 0.45, 2.6);
+  ramp.position.set(8.8, 1.35, 2.6); // Elevada sobre la arena: antes quedaba enterrada
   ramp.rotation.order = 'YXZ';
   ramp.rotation.y = -0.55;
   ramp.rotation.x = 0.22;
