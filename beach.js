@@ -831,6 +831,53 @@ function create(scene, renderer, opts = {}) {
   fallenLogs.castShadow = true; fallenLogs.receiveShadow = true; fallenLogs.frustumCulled = false;
   jungleGroup.add(fallenLogs);
 
+
+  // Plantas GLB reales aportadas para la nueva zona selvática.
+  // Se cargan una vez y se clonan con variaciones de escala/rotación para cuidar el rendimiento.
+  const jungleAssetLoader = opts.gltfLoader || new GLTFLoader();
+  function scatterJungleAsset(gltf, fileName, count, minHeight, maxHeight, seed) {
+    const source = gltf.scene;
+    source.name = fileName.replace('.glb', '-source');
+    source.updateMatrixWorld(true);
+    const sourceBounds = new THREE.Box3().setFromObject(source);
+    const sourceHeight = Math.max(.001, sourceBounds.max.y - sourceBounds.min.y);
+    const rand = mulberry32(seed);
+    const plantGroup = new THREE.Group();
+    plantGroup.name = fileName.replace('.glb', '-scatter');
+    for (let i = 0; i < count; i++) {
+      const angle = rand() * Math.PI * 2;
+      const radius = 5 + Math.sqrt(rand()) * 68;
+      const x = jungleCenter.x + Math.cos(angle) * radius;
+      const z = jungleCenter.z + Math.sin(angle) * radius * .31;
+      if (x < 15 || x > 173 || z < 112 || z > 148) continue;
+      if (Math.hypot(x - 94, z - 145) < 8.5) continue;
+      const plant = source.clone(true);
+      const targetHeight = minHeight + rand() * (maxHeight - minHeight);
+      const scale = targetHeight / sourceHeight;
+      plant.scale.setScalar(scale);
+      plant.rotation.y = rand() * Math.PI * 2;
+      plant.updateMatrixWorld(true);
+      const bounds = new THREE.Box3().setFromObject(plant);
+      plant.position.set(x, terrainH(x, z) - bounds.min.y, z);
+      plant.traverse(obj => {
+        if (!obj.isMesh) return;
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+        // No se sustituyen los materiales ni las texturas originales de los GLB.
+      });
+      plantGroup.add(plant);
+    }
+    jungleGroup.add(plantGroup);
+  }
+  jungleAssetLoader.load(new URL('./sunburst-fern-standard.glb', import.meta.url).href,
+    gltf => scatterJungleAsset(gltf, 'sunburst-fern-standard.glb', 38, 1.15, 2.35, 8812),
+    undefined,
+    error => console.error('No se pudo cargar sunburst-fern-standard.glb', error));
+  jungleAssetLoader.load(new URL('./glowcap-cluster-standard.glb', import.meta.url).href,
+    gltf => scatterJungleAsset(gltf, 'glowcap-cluster-standard.glb', 20, .65, 1.35, 19371),
+    undefined,
+    error => console.error('No se pudo cargar glowcap-cluster-standard.glb', error));
+
   let audio = null, muted = false;
   function startAudio(ctx) {
     if (audio || !ctx) return;
