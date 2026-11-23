@@ -725,7 +725,7 @@ function updateHeldTool(dt=0){
   heldToolRoot.position.copy(_v);heldToolRoot.quaternion.copy(_qW);
   heldToolRoot.position.add(new THREE.Vector3(0,-.015,0).applyQuaternion(_qW));
   axeTool.visible=activeTool==='axe' && tools.axe;knifeTool.visible=activeTool==='knife' && tools.knife;
-  if(torchTool){torchTool.visible=activeTool==='torch'&&torchOwned;torchTool.rotation.set(Math.PI+.10,0,-.12);const burning=torchTool.visible&&torchLit&&torchFuel>0;torchFlame.visible=burning;torchInnerFlame.visible=burning;torchLight.intensity=burning?2.15+.30*Math.sin(performance.now()*.019)+.15*Math.sin(performance.now()*.037):0;torchLight.visible=burning;torchFlame.scale.set(1+.10*Math.sin(performance.now()*.021),.9+.16*Math.sin(performance.now()*.026),1+.08*Math.cos(performance.now()*.019));torchFlame.rotation.z=-.09+Math.sin(performance.now()*.013)*.10;torchInnerFlame.scale.y=.88+.18*Math.sin(performance.now()*.03);for(const puff of torchSmoke){const phase=(performance.now()*.00065+puff.userData.phase)%1;puff.visible=burning;puff.position.set(Math.sin(phase*8+puff.userData.phase)*.025,.88+phase*.26,Math.cos(phase*7+puff.userData.phase)*.02);puff.scale.setScalar(.45+phase*1.3);puff.material.opacity=burning?.16*(1-phase):0;}}
+  if(torchTool){torchTool.visible=activeTool==='torch'&&torchOwned;torchTool.rotation.set(.08,0,-.12);torchTool.scale.setScalar(.78);const burning=torchTool.visible&&torchLit&&torchFuel>0;torchFlame.visible=burning;torchInnerFlame.visible=burning;torchLight.intensity=burning?2.15+.30*Math.sin(performance.now()*.019)+.15*Math.sin(performance.now()*.037):0;torchLight.visible=burning;torchFlame.scale.set(1+.10*Math.sin(performance.now()*.021),.9+.16*Math.sin(performance.now()*.026),1+.08*Math.cos(performance.now()*.019));torchFlame.rotation.z=-.09+Math.sin(performance.now()*.013)*.10;torchInnerFlame.scale.y=.88+.18*Math.sin(performance.now()*.03);for(const puff of torchSmoke){const phase=(performance.now()*.00065+puff.userData.phase)%1;puff.visible=burning;puff.position.set(Math.sin(phase*8+puff.userData.phase)*.025,.88+phase*.26,Math.cos(phase*7+puff.userData.phase)*.02);puff.scale.setScalar(.45+phase*1.3);puff.material.opacity=burning?.16*(1-phase):0;}}
   axeTool.rotation.set(.12,0,-.16);knifeTool.rotation.set(.08,0,.04);
   if(toolAction){
     toolActionT+=dt;const t=clamp(toolActionT/.62,0,1);
@@ -1170,7 +1170,31 @@ function freeHand(slot){
   else if(slot==='R'&&rightBusyWithTool()){dropFromHand('R');if(rightBusyWithTool())equipTool('fist');}
   return slotFree(slot);
 }
-function dropHeldThrowable(slot,quiet){const rec=heldThrowables[slot];if(!rec)return false;const dp=dropPoint(.75);addResource(rec.type,dp.x,dp.z,false);if(heldThrowableMeshes[slot]){scene.remove(heldThrowableMeshes[slot]);heldThrowableMeshes[slot]=null;}heldThrowables[slot]=null;refreshInventory();if(!quiet)setStatus('Dejaste el objeto en el suelo.');return true;}
+function dropHeldThrowable(slot,quiet,falling=false){
+  const rec=heldThrowables[slot];if(!rec)return false;
+  const heldMesh=heldThrowableMeshes[slot];heldThrowables[slot]=null;heldThrowableMeshes[slot]=null;
+  if(falling&&heldMesh){
+    const spec=THROW_SPEC[rec.type]||THROW_SPEC.stone,mesh=heldMesh;
+    const p=mesh.position.clone();p.y=Math.max(p.y,groundY(p.x,p.z)+spec.r+.12);
+    const forward=new THREE.Vector3(waveVelX,0,waveVelZ);if(forward.lengthSq()<.04)forward.set(Math.sin(player.rotation.y),0,Math.cos(player.rotation.y));forward.normalize();
+    const speed=rec.type==='coconut'?2.5:rec.type==='branch'?1.35:.42;
+    const vel=forward.multiplyScalar(speed).add(new THREE.Vector3((Math.random()-.5)*.8,rec.type==='coconut'?1.15:.28,(Math.random()-.5)*.8));
+    mesh.position.copy(p);
+    projectiles.push({mesh,pos:mesh.position,vel,type:rec.type,spec,bounces:0,t:0,impactSpeed:0,spent:false,q:new THREE.Quaternion(),spinA:0,spinW:rec.type==='coconut'?13:rec.type==='stone'?1.2:5,spinAxis:new THREE.Vector3(1,0,0),yaw:player.rotation.y});
+  }else{
+    const dp=dropPoint(.75);addResource(rec.type,dp.x,dp.z,false);if(heldMesh)scene.remove(heldMesh);
+  }
+  refreshInventory();if(!quiet)setStatus(falling?'¡Se te cayó lo que llevabas!':'Dejaste el objeto en el suelo.');return true;
+}
+function dropHandsOnFall(){
+  let dropped=false;
+  for(const slot of ['L','R']){
+    if(heldThrowables[slot]){dropHeldThrowable(slot,true,true);dropped=true;}
+    else if(hands[slot]?.kind==='gull'){dropGullFromHand(slot,'');dropped=true;}
+    else if(hands[slot]){dropFishFromHand(slot,'');dropped=true;}
+  }
+  if(dropped){refreshHotbar();setStatus('¡Te caíste! Los objetos se soltaron de tus manos.');}
+}
 function detachResource(g){const i=resources.indexOf(g);if(i>=0)resources.splice(i,1);if(nearbyResource===g)nearbyResource=null;}
 const splashDropMat=new THREE.MeshBasicMaterial({color:0xdff3ff,transparent:true,opacity:.85});
 function spawnSplash(x,z){
@@ -2067,7 +2091,7 @@ function refreshHotbar() {
 }
 function craftTorch(){
   if(torchOwned&&torchFuel>0){selectTool('torch');return;}
-  if(!spendResources(3,1))return;torchOwned=true;torchLit=false;torchFuel=torchFuelMax;selectTool('torch');refreshHotbar();setStatus('Antorcha fabricada: rama, trapo y resina. Acercá la punta a una fogata encendida y pulsa H para prenderla.');
+  if(!spendResources(3,1))return;torchOwned=true;torchLit=false;torchFuel=torchFuelMax;selectTool('torch');refreshHotbar();setStatus('Antorcha fabricada. Con la antorcha equipada, acercá su punta a las llamas y pulsá H para encenderla. F queda reservado exclusivamente para la fogata.');
 }
 function startTorchIgnition(){
   if(!torchOwned||torchFuel<=0){setStatus('Necesitas fabricar una antorcha nueva con B.');return;}
@@ -2091,13 +2115,13 @@ function applyTorchCarryPose(){
   if(!torchLit||activeTool!=='torch'||!B.uarmR||!B.farmR)return;
   _f.set(-Math.sin(player.rotation.y),0,-Math.cos(player.rotation.y)).normalize();
   _sideV.crossVectors(worldUp,_f);
-  const upper=new THREE.Vector3(0,-.42,0).addScaledVector(_f,.88).addScaledVector(_sideV,-.16).normalize();
-  const fore=new THREE.Vector3(0,-.08,0).addScaledVector(_f,1).addScaledVector(_sideV,-.08).normalize();
+  const upper=new THREE.Vector3(0,-.10,0).addScaledVector(_f,1).addScaledVector(_sideV,-.10).normalize();
+  const fore=new THREE.Vector3(0,.04,0).addScaledVector(_f,1).addScaledVector(_sideV,-.04).normalize();
   aimBone(B.uarmR,B.farmR,upper,1);aimBone(B.farmR,B.handR,fore,1);
 }
 function applyTorchIgnitionPose(time){
   if(!torchIgnitionActive||!B.uarmR||!B.farmR)return;const t=clamp(torchIgnitionT/1.35,0,1);const reach=smooth(clamp(t/.32,0,1))*(1-smooth(clamp((t-.70)/.30,0,1)));
-  const fire=campfires.find(f=>f.lit&&Math.hypot(f.x-player.position.x,f.z-player.position.z)<1.35);if(fire)_f.set(fire.x-player.position.x,0,fire.z-player.position.z).normalize();else _f.set(Math.sin(player.rotation.y),0,Math.cos(player.rotation.y));_sideV.crossVectors(worldUp,_f);const upper=new THREE.Vector3(0,-.42,0).addScaledVector(_f,.88).addScaledVector(_sideV,-.16).normalize();const fore=new THREE.Vector3(0,-.08,0).addScaledVector(_f,1).addScaledVector(_sideV,-.08).normalize();aimBone(B.uarmR,B.farmR,upper,reach);aimBone(B.farmR,B.handR,fore,reach);
+  const fire=campfires.find(f=>f.lit&&Math.hypot(f.x-player.position.x,f.z-player.position.z)<1.35);if(fire)_f.set(fire.x-player.position.x,0,fire.z-player.position.z).normalize();else _f.set(Math.sin(player.rotation.y),0,Math.cos(player.rotation.y));_sideV.crossVectors(worldUp,_f);const upper=new THREE.Vector3(0,-.10,0).addScaledVector(_f,1).addScaledVector(_sideV,-.10).normalize();const fore=new THREE.Vector3(0,.04,0).addScaledVector(_f,1).addScaledVector(_sideV,-.04).normalize();aimBone(B.uarmR,B.farmR,upper,reach);aimBone(B.farmR,B.handR,fore,reach);
 }
 function craftFishingRod() {
   if (inventory.fishingRod) {
@@ -3655,7 +3679,7 @@ function update(dt, time) {
     } else { rockSlideX*=Math.exp(-5.5*dt); rockSlideZ*=Math.exp(-5.5*dt); }
     // Correr sobre una pendiente fuerte puede hacer perder el equilibrio y rodar cuesta abajo.
     if (moving && running && support && support.normal.y < .70 && Math.hypot(rockSlideX,rockSlideZ) > .34 && fallMode === 'none') {
-      fallMode='roll'; fallT=0; hillFallClock=0; hillFallSide=rockSlideX>=0?1:-1; hillFallSpin=0;
+      dropHandsOnFall();fallMode='roll'; fallT=0; hillFallClock=0; hillFallSide=rockSlideX>=0?1:-1; hillFallSpin=0;
       onGround=true; jumpState='ground'; vy=0;
       damagePlayer(2,'¡Perdiste el equilibrio en la ladera y empezaste a rodar!');
     }
@@ -3864,7 +3888,7 @@ function update(dt, time) {
     const hardFall=force>(elevated?.30:.72);
     waveVelX=wave.dirX*(4.2+force*5.0);waveVelZ=wave.dirZ*(4.8+force*5.8);
     fallMode=hardFall?'fall':'stagger';fallT=0;fallLean=0;
-    if(hardFall){onGround=false;vy=.25+force*.28;jumpState='air';jumpT=0;fallT=0;damagePlayer(deepWater?7:5,'¡Una ola gigante te golpeó! Perdiste el equilibrio y te arrastró por el suelo.');}
+    if(hardFall){dropHandsOnFall();onGround=false;vy=.25+force*.28;jumpState='air';jumpT=0;fallT=0;damagePlayer(deepWater?7:5,'¡Una ola gigante te golpeó! Perdiste el equilibrio y te arrastró por el suelo.');}
     else {damagePlayer(2,'¡La rompiente te empujó y casi te hizo caer!');}
     cameraLanding=Math.max(cameraLanding,hardFall?.42:.16);cameraWaveRoll+=(wave.dirX>=0?-1:1)*(hardFall?.22:.08);cameraWaveShake=Math.max(cameraWaveShake,hardFall?1.35:.58);
   }}
@@ -3874,13 +3898,13 @@ function updateDayNight(time){
   const cycle=480,angle=(time/cycle)*Math.PI*2,sunY=Math.sin(angle),day=clamp((sunY+.12)/.42,0,1),night=1-day;
   const dir=new THREE.Vector3(Math.cos(angle)*.82,sunY,Math.sin(angle)*.57).normalize();
   const dawn=clamp(1-Math.abs(sunY)*5,0,1),sunCol=new THREE.Color(0xfff0d7).lerp(new THREE.Color(0xff9b62),dawn*.72);
-  sun.position.set(player.position.x+dir.x*60,player.position.y+dir.y*60,player.position.z+dir.z*60);sun.target.position.copy(player.position);sun.target.updateMatrixWorld();sun.color.copy(sunCol);sun.intensity=.035+3.05*day;
-  hemi.intensity=.012+.36*day;hemi.color.set(0x9bb4db).lerp(new THREE.Color(0xbfdcff),day);hemi.groundColor.set(0x202b43).lerp(new THREE.Color(0xd8c49a),day);
-  nightLight.position.set(player.position.x-dir.x*55,player.position.y-dir.y*55,player.position.z-dir.z*55);nightLight.target.position.copy(player.position);nightLight.target.updateMatrixWorld();nightLight.intensity=.035*night;
+  sun.position.set(player.position.x+dir.x*60,player.position.y+dir.y*60,player.position.z+dir.z*60);sun.target.position.copy(player.position);sun.target.updateMatrixWorld();sun.color.copy(sunCol);sun.intensity=3.15*day;
+  hemi.intensity=.0015+.39*day;hemi.color.set(0x9bb4db).lerp(new THREE.Color(0xbfdcff),day);hemi.groundColor.set(0x202b43).lerp(new THREE.Color(0xd8c49a),day);
+  nightLight.position.set(player.position.x-dir.x*55,player.position.y-dir.y*55,player.position.z-dir.z*55);nightLight.target.position.copy(player.position);nightLight.target.updateMatrixWorld();nightLight.intensity=.012*night;
   moon.position.copy(player.position).addScaledVector(dir,-82);moon.visible=night>.04;moonGlow.position.copy(moon.position);moonGlow.intensity=.16*night;stars.position.copy(player.position);stars.material.opacity=clamp((night-.12)/.65,0,.88);
   const domeU=beach.dome?.material?.uniforms;if(domeU){domeU.uSunDir.value.set(dir.x,dir.y,dir.z);domeU.uSunCol.value.set(sunCol.r,sunCol.g,sunCol.b);domeU.uZenith.value.set(.008,.018,.065).lerp(new THREE.Vector3(.06,.24,.62),day);domeU.uHorizon.value.set(.025,.04,.105).lerp(new THREE.Vector3(.52,.74,.90),day);}
   const waterU=beach?.water?.material?.uniforms;if(waterU?.uSunDir)waterU.uSunDir.value.set(dir.x,dir.y,dir.z);if(waterU?.uSunCol)waterU.uSunCol.value.set(sunCol.r,sunCol.g,sunCol.b);
-  scene.fog.color.set(0x111b31).lerp(new THREE.Color(0x9eb9cc),day);scene.fog.density=.0062-.002*day+(stormActive?.0045:rainActive?.0014:0);renderer.toneMappingExposure=(.68+.35*day)*(stormActive?.78:rainActive?.91:1)+(lightningFlash*.16);
+  scene.fog.color.set(0x111b31).lerp(new THREE.Color(0x9eb9cc),day);scene.fog.density=.0062-.002*day+(stormActive?.0045:rainActive?.0014:0);renderer.toneMappingExposure=(.62+.38*day)*(stormActive?.72:rainActive?.88:1)+(lightningFlash*.16);
   const hour=(6+time/cycle*24)%24;let label;if(hour>=5&&hour<7)label='Amanecer';else if(hour>=7&&hour<17)label='Día';else if(hour>=17&&hour<19)label='Atardecer';else label='Noche';
   const hh=Math.floor(hour),mm=Math.floor((hour%1)*60);$('dayClock').textContent=`${night>.5?'🌙':'☀️'} ${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')} · ${label} ${$('dayClock').dataset.weather||''}`;
 }
