@@ -258,6 +258,34 @@ function sandAlbedo(g, w, h) {
   }
   g.putImageData(img, 0, 0);
 }
+// Textura de suelo selvático: tierra orgánica, manchas y briznas finas en varias tonalidades.
+function jungleGrassAlbedo(g, w, h) {
+  const img = g.createImageData(w, h), rnd = mulberry32(91827);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const n = rnd(), broad = Math.sin(x * .047 + Math.sin(y * .031) * 2.1) * .5 + Math.sin(y * .039 + x * .018) * .5;
+    const patch = Math.sin(x * .013 + y * .021) * .5 + .5, v = .78 + n * .25 + broad * .075 + patch * .12;
+    const i = (y * w + x) * 4;
+    img.data[i] = clamp((35 + patch * 13) * v, 0, 255);
+    img.data[i + 1] = clamp((66 + patch * 23) * v, 0, 255);
+    img.data[i + 2] = clamp((24 + patch * 9) * v, 0, 255);
+    img.data[i + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  for (let i = 0; i < 18000; i++) {
+    const x = rnd() * w, y = rnd() * h, len = 2 + rnd() * 13, hue = rnd(), light = rnd();
+    g.strokeStyle = hue < .22 ? `rgba(25,48,17,${.18 + light * .22})` : hue > .82 ? `rgba(133,151,55,${.16 + light * .24})` : `rgba(65,105,31,${.20 + light * .30})`;
+    g.lineWidth = .45 + rnd() * 1.25;
+    g.beginPath(); g.moveTo(x, y);
+    g.quadraticCurveTo(x + (rnd() - .5) * 5, y - len * .55, x + (rnd() - .5) * 9, y - len);
+    g.stroke();
+  }
+  for (let i = 0; i < 950; i++) {
+    const x = rnd() * w, y = rnd() * h, r = .5 + rnd() * 2.4;
+    g.fillStyle = rnd() < .5 ? 'rgba(38,31,18,.20)' : 'rgba(164,139,75,.16)';
+    g.beginPath(); g.ellipse(x, y, r * 1.7, r, rnd() * Math.PI, 0, Math.PI * 2); g.fill();
+  }
+}
+
 function sandNormal(g, w, h) {
   const H = new Float32Array(w * h), rnd = mulberry32(11), T = Math.PI * 2;
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
@@ -517,24 +545,34 @@ function create(scene, renderer, opts = {}) {
   tgeo.computeVertexNormals();
   const sandMap = makeCanvasTexture(512, 512, sandAlbedo, { aniso }); sandMap.repeat.set(140, 140);
   const sandNrm = makeCanvasTexture(256, 256, sandNormal, { srgb: false, aniso }); sandNrm.repeat.set(350, 350);
+  const jungleGrassMap = makeCanvasTexture(512, 512, jungleGrassAlbedo, { aniso });
   const sandMat = new THREE.MeshStandardMaterial({ map: sandMap, normalMap: sandNrm, normalScale: new THREE.Vector2(.7, .7), roughness: .95, metalness: 0, vertexColors: true });
   sandMat.onBeforeCompile = sh => {
     sh.uniforms.uTime = uTime;
+    sh.uniforms.uJungleGrassMap = { value: jungleGrassMap };
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying float vH;varying vec2 vXZ;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvH=position.y;vXZ=position.xz;');
+      .replace('#include <common>', '#include <common>\\nvarying float vH;varying vec2 vXZ;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\\nvH=position.y;vXZ=position.xz;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', `#include <common>\nvarying float vH;varying vec2 vXZ;uniform float uTime;\n${GLSL_NOISE}`)
+      .replace('#include <common>', `#include <common>\\nvarying float vH;varying vec2 vXZ;uniform float uTime;uniform sampler2D uJungleGrassMap;\\n${GLSL_NOISE}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
+        // Césped de selva: máscara orgánica y transición suave hacia la arena.
+        vec2 jungleP=vec2((vXZ.x-94.)/82.,(vXZ.y-137.)/25.);
+        float jungleDist=length(jungleP);
+        float jungleNoise=bwFbm(vXZ*.075+vec2(18.4,-7.2));
+        float jungleMask=1.-smoothstep(.88,1.16,jungleDist+(jungleNoise-.5)*.13);
+        vec3 jungleGrass=texture2D(uJungleGrassMap,vXZ*.19).rgb;
+        jungleGrass*=.88+.16*bwFbm(vXZ*.31+vec2(4.1,29.));
+        diffuseColor.rgb=mix(diffuseColor.rgb,jungleGrass,jungleMask);
         float bwWsh=.06+.055*sin(uTime*.55+vXZ.x*.035)+.035*sin(uTime*.31+vXZ.x*.11+1.7);
         float bwN=bwFbm(vXZ*.8);
         float bwEdge=bwWsh+(bwN-.5)*.05;
         float bwFilm=1.-smoothstep(bwEdge-.025,bwEdge,vH);
         float bwWet=1.-smoothstep(bwEdge,bwEdge+.28,vH);
         float bwFoam=smoothstep(bwEdge-.10,bwEdge-.02,vH)*(1.-smoothstep(bwEdge-.02,bwEdge,vH));
-        diffuseColor.rgb*=mix(1.,.62,max(bwWet*.8,bwFilm));
-        diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.93),bwFoam*.55*(.5+bwN));`)
-      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor=mix(roughnessFactor,.18,max(bwWet*.6,bwFilm));');
+        diffuseColor.rgb*=mix(1.,.62,max(bwWet*.8,bwFilm)*(1.-jungleMask));
+        diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.93),bwFoam*.55*(.5+bwN)*(1.-jungleMask));`)
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\\nroughnessFactor=mix(roughnessFactor,.18,max(bwWet*.6,bwFilm));roughnessFactor=mix(roughnessFactor,.96,jungleMask);');
   };
   const terrain = new THREE.Mesh(tgeo, sandMat);
   terrain.receiveShadow = true;
