@@ -381,83 +381,9 @@ function buildPalm(seed) {
   return { trunkGeo, frondGeo, top: P2.clone() };
 }
 
-// Carga segura y no bloqueante del barco roto en la orilla
-function createShipwreck(scene, {
-  x = 12,
-  z = shoreZ(12) + 1.5,
-  yaw = 0.35,
-  tiltRoll = 0.14,
-  pitch = -0.04,
-  sink = 1.15,
-  scale = 1.0,
-  walkableMeshes = [],
-  colliders = [],
-  gltfLoader = null,
-} = {}) {
-  const group = new THREE.Group();
-  const baseY = terrainH(x, z) - sink;
-  group.position.set(x, baseY, z);
-  group.rotation.order = 'YXZ';
-  group.rotation.y = yaw;
-  group.rotation.z = tiltRoll;
-  group.rotation.x = pitch;
-  group.scale.setScalar(scale);
-  scene.add(group);
-
-  const rampMat = new THREE.MeshStandardMaterial({
-    color: 0xff2d55, // MARCADOR VISUAL: cambiar este color en cada actualización
-    roughness: 0.9,
-    metalness: 0.05,
-  });
-  const ramp = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.24, 5.4), rampMat);
-  ramp.position.set(8.8, 1.35, 2.6); // Elevada sobre la arena: antes quedaba enterrada
-  ramp.rotation.order = 'YXZ';
-  ramp.rotation.y = -0.55;
-  ramp.rotation.x = 0.22;
-  ramp.castShadow = false;
-  ramp.receiveShadow = true;
-  group.add(ramp);
-  group.updateMatrixWorld(true);
-  walkableMeshes.push(ramp);
-
-  colliders.push({ x, z, r: 5.2 });
-
-  const attachWreck = (gltf) => {
-    const wreck = gltf?.scene;
-    if (!wreck) return;
-    wreck.traverse((child) => {
-      if (!child.isMesh) return;
-      child.castShadow = true;
-      child.receiveShadow = true;
-      if (child.material) child.material.side = THREE.DoubleSide;
-      walkableMeshes.push(child);
-    });
-
-    // Centrar el modelo y elevarlo: ambos barcos GLB tienen el casco
-    // modelado por debajo de Y=0; sin este ajuste queda enterrado en la arena.
-    wreck.updateMatrixWorld(true);
-    const wreckBounds = new THREE.Box3().setFromObject(wreck);
-    const wreckCenter = new THREE.Vector3();
-    wreckBounds.getCenter(wreckCenter);
-    wreck.position.x -= wreckCenter.x;
-    wreck.position.z -= wreckCenter.z;
-    wreck.position.y += 1.45 - wreckBounds.max.y;
-
-    group.add(wreck);
-    group.updateMatrixWorld(true);
-  };
-
-  if (gltfLoader && typeof gltfLoader.load === 'function') {
-    gltfLoader.load('./hoo_marina_wreck_2.glb', attachWreck, undefined, (err) => {
-      console.warn('Beach: no se pudo cargar hoo_marina_wreck_2.glb', err);
-    });
-  } else if (typeof THREE.GLTFLoader === 'function') {
-    new THREE.GLTFLoader().load('./hoo_marina_wreck_2.glb', attachWreck, undefined, (err) => {
-      console.warn('Beach: no se pudo cargar hoo_marina_wreck_2.glb', err);
-    });
-  }
-
-  return group;
+// Naufragio desactivado temporalmente: se retiró la tabla, su colisión y la carga del GLB antiguo.
+function createShipwreck() {
+  return null;
 }
 
 function create(scene, renderer, opts = {}) {

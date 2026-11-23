@@ -3259,7 +3259,7 @@ document.addEventListener('keydown', e => {
   if (e.code === 'Space' && loaded && !wildlife?.isMounted?.() && fallMode==='none' && onGround && sitBlend < .3 && (jumpState === 'ground' || jumpState === 'land')) { jumpState = 'prep'; jumpT = 0; }
 });
 document.addEventListener('keyup', e => { keys[e.code]=false; if(e.code==='KeyE'){wildlife?.stopDraggingCarcass?.();if(resourceHoldTimer){clearTimeout(resourceHoldTimer);resourceHoldTimer=null;}if(!resourceHoldConsumed&&nearbyResource&&!wildlife.isCrateNearby()&&!nearestDoor())storeNearbyResource(nearbyResource);} if(e.code==='KeyM'){const held=performance.now()-backpackHoldAt;if(held<320&&!backpackWasLong)eatFish();} });
-setBackpackVisible(true);
+setBackpackVisible(false); // La mochila comienza cerrada al iniciar una partida.
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 
 // ---------- Pose procedural del salto ----------
