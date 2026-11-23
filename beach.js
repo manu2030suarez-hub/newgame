@@ -748,8 +748,8 @@ function create(scene, renderer, opts = {}) {
   const jungleCenter = { x: 94, z: 137 };
   const jungleTrees = [];
   const jungleTreeCount = 126;
-  const trunkGeo = new THREE.CylinderGeometry(.24, .62, 1, 9, 3);
-  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x59402b, roughness: .96 });
+  const jungleTrunkGeo = new THREE.CylinderGeometry(.24, .62, 1, 9, 3);
+  const jungleTrunkMat = new THREE.MeshStandardMaterial({ color: 0x59402b, roughness: .96 });
   const canopyGeo = new THREE.IcosahedronGeometry(1, 2);
   const canopyMat = new THREE.MeshStandardMaterial({ color: 0x31552b, roughness: .94, vertexColors: true });
   const understoryGeo = new THREE.IcosahedronGeometry(1, 1);
@@ -770,7 +770,7 @@ function create(scene, renderer, opts = {}) {
     if (Math.hypot(slopeX, slopeZ) > 2.0) continue;
     trees.push({ x, z, y: ground - .12, h: 10.5 + jungleRand() * 7.5, rot: jungleRand() * Math.PI * 2, crown: 3.1 + jungleRand() * 1.8 });
   }
-  const jungleTrunks = new THREE.InstancedMesh(trunkGeo, trunkMat, trees.length);
+  const jungleTrunks = new THREE.InstancedMesh(jungleTrunkGeo, jungleTrunkMat, trees.length);
   const canopyInstances = trees.length * 6;
   const jungleCanopy = new THREE.InstancedMesh(canopyGeo, canopyMat, canopyInstances);
   const undergrowth = new THREE.InstancedMesh(understoryGeo, understoryMat, trees.length * 3);
