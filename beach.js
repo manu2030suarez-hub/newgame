@@ -265,9 +265,9 @@ function jungleGrassAlbedo(g, w, h) {
     const n = rnd(), broad = Math.sin(x * .047 + Math.sin(y * .031) * 2.1) * .5 + Math.sin(y * .039 + x * .018) * .5;
     const patch = Math.sin(x * .013 + y * .021) * .5 + .5, v = .78 + n * .25 + broad * .075 + patch * .12;
     const i = (y * w + x) * 4;
-    img.data[i] = clamp((35 + patch * 13) * v, 0, 255);
-    img.data[i + 1] = clamp((66 + patch * 23) * v, 0, 255);
-    img.data[i + 2] = clamp((24 + patch * 9) * v, 0, 255);
+    img.data[i] = clamp((48 + patch * 15) * v, 0, 255);
+    img.data[i + 1] = clamp((88 + patch * 29) * v, 0, 255);
+    img.data[i + 2] = clamp((31 + patch * 12) * v, 0, 255);
     img.data[i + 3] = 255;
   }
   g.putImageData(img, 0, 0);
