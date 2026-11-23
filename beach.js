@@ -381,9 +381,74 @@ function buildPalm(seed) {
   return { trunkGeo, frondGeo, top: P2.clone() };
 }
 
-// Naufragio desactivado temporalmente: se retiró la tabla, su colisión y la carga del GLB antiguo.
-function createShipwreck() {
-  return null;
+// Naufragio principal: modelo GLB liviano con texturas integradas.
+function createShipwreck(scene, opts = {}) {
+  const group = new THREE.Group();
+  group.name = 'shipwreck';
+  scene.add(group);
+
+  const loader = opts.gltfLoader;
+  if (!loader) {
+    console.warn('Naufragio: no hay GLTFLoader disponible.');
+    return group;
+  }
+
+  const x = opts.x ?? 12;
+  const z = opts.z ?? (shoreZ(x) + 1.5);
+  const targetLength = 12.0;
+
+  loader.load('./shipwreck.glb', (gltf) => {
+    const model = gltf.scene;
+    model.name = 'shipwreck-model';
+    model.rotation.set(opts.pitch ?? -0.04, opts.yaw ?? 0.35, opts.tiltRoll ?? 0.14);
+    model.updateMatrixWorld(true);
+
+    let bounds = new THREE.Box3().setFromObject(model);
+    const size = bounds.getSize(new THREE.Vector3());
+    const horizontal = Math.max(size.x, size.z);
+    if (!Number.isFinite(horizontal) || horizontal < 0.001) {
+      console.warn('Naufragio: el modelo no tiene dimensiones válidas.');
+      return;
+    }
+
+    model.scale.setScalar(targetLength / horizontal);
+    bounds = new THREE.Box3().setFromObject(model);
+    const center = bounds.getCenter(new THREE.Vector3());
+    model.position.x -= center.x;
+    model.position.z -= center.z;
+    model.updateMatrixWorld(true);
+    bounds = new THREE.Box3().setFromObject(model);
+    const finalSize = bounds.getSize(new THREE.Vector3());
+
+    model.traverse((obj) => {
+      if (!obj.isMesh) return;
+      obj.castShadow = true;
+      obj.receiveShadow = true;
+    });
+
+    group.position.set(x, terrainH(x, z) - 0.42 - bounds.min.y, z);
+    group.add(model);
+    group.updateMatrixWorld(true);
+
+    // Volumen de colisión sencillo para impedir atravesar el casco.
+    if (Array.isArray(opts.colliders)) {
+      opts.colliders.push({
+        x, z,
+        r: Math.max(1.8, Math.min(finalSize.x, finalSize.z) * 0.42),
+        rx: Math.max(2.2, finalSize.x * 0.43),
+        rz: Math.max(2.2, finalSize.z * 0.43),
+        rock: true,
+        bottom: group.position.y + bounds.min.y,
+        top: group.position.y + bounds.max.y,
+        mesh: model
+      });
+    }
+    console.info('Naufragio cargado:', 'shipwreck.glb');
+  }, undefined, (error) => {
+    console.error('No se pudo cargar shipwreck.glb:', error);
+  });
+
+  return group;
 }
 
 function create(scene, renderer, opts = {}) {
