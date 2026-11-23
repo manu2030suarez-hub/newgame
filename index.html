@@ -1144,7 +1144,7 @@ function handLabel(s){
   const t=heldThrowables[s];if(t)return t.type==='stone'?'Piedra':t.type==='branch'?'Rama':'Coco';
   if(heldOpenCoconutSlot===s)return 'Coco abierto';
   if(hands[s])return hands[s].kind==='gull'?'Gaviota':(hands[s].cooked?'Pez cocido':'Pez');
-  if(s==='R'&&rightBusyWithTool())return activeTool==='rod'?'Caña de pescar':activeTool==='axe'?'Hacha':'Cuchillo';
+  if(s==='R'&&rightBusyWithTool())return activeTool==='rod'?'Caña de pescar':activeTool==='axe'?'Hacha':activeTool==='knife'?'Cuchillo':'Antorcha';
   return null;
 }
 function putThrowableInHand(item,slot,prefix=''){
@@ -2293,9 +2293,9 @@ function releaseHookedFish() {
 // ---------- Peces en la arena, manos y cocina (V17) ----------
 // Cada mano puede llevar un pez. La mano derecha además empuña la herramienta activa (hacha, cuchillo o caña).
 function heldFishCount(cooked) { return ['L', 'R'].filter(h => hands[h] && hands[h].kind!=='gull' && !!hands[h].cooked === cooked).length; }
-function rightBusyWithTool() { return activeTool === 'rod' || activeTool === 'axe' || activeTool === 'knife'; }
+function rightBusyWithTool() { return activeTool === 'rod' || activeTool === 'axe' || activeTool === 'knife' || activeTool === 'torch'; }
 function handsLabel() {
-  const R = heldThrowables.R ? (heldThrowables.R.type==='stone'?'piedra':heldThrowables.R.type==='branch'?'rama':'coco') : heldOpenCoconutSlot==='R' ? 'coco abierto' : hands.R ? (hands.R.kind==='gull'?'gaviota':hands.R.cooked ? 'pez cocido' : 'pez') : rightBusyWithTool() ? (activeTool === 'rod' ? 'caña' : activeTool === 'axe' ? 'hacha' : 'cuchillo') : 'libre';
+  const R = heldThrowables.R ? (heldThrowables.R.type==='stone'?'piedra':heldThrowables.R.type==='branch'?'rama':'coco') : heldOpenCoconutSlot==='R' ? 'coco abierto' : hands.R ? (hands.R.kind==='gull'?'gaviota':hands.R.cooked ? 'pez cocido' : 'pez') : rightBusyWithTool() ? (activeTool === 'rod' ? 'caña' : activeTool === 'axe' ? 'hacha' : activeTool === 'knife' ? 'cuchillo' : 'antorcha') : 'libre';
   const L = heldThrowables.L ? (heldThrowables.L.type==='stone'?'piedra':heldThrowables.L.type==='branch'?'rama':'coco') : heldOpenCoconutSlot==='L' ? 'coco abierto' : hands.L ? (hands.L.kind==='gull'?'gaviota':hands.L.cooked ? 'pez cocido' : 'pez') : 'libre';
   return `izq: ${L} · der: ${R}`;
 }
