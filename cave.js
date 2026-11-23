@@ -374,7 +374,16 @@ export function createCave(THREE, scene, beach, opts = {}) {
 
   // Cofre de explorador oculto en un recoveco: recompensa única.
   const chestRoot = new THREE.Group(); chestRoot.position.set(-7.1, .13, -2.1); chestRoot.rotation.y = -.48; caveDecor.add(chestRoot);
-  const chestWood = new THREE.MeshStandardMaterial({ color: 0x60402a, map: tex, roughness: .82 });
+  const chestCanvas = document.createElement('canvas'); chestCanvas.width = 256; chestCanvas.height = 256;
+  const chestCtx = chestCanvas.getContext('2d'); chestCtx.fillStyle = '#67462d'; chestCtx.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 180; i++) {
+    const y = h2(i, 51) * 256, x = h2(i, 53) * 256;
+    chestCtx.strokeStyle = i % 3 ? 'rgba(31,20,12,.22)' : 'rgba(205,157,100,.19)';
+    chestCtx.lineWidth = .7 + h2(i, 55) * 2.2;
+    chestCtx.beginPath(); chestCtx.moveTo(x, y); chestCtx.bezierCurveTo(x + 24, y - 7, x + 48, y + 9, x + 90, y + 2); chestCtx.stroke();
+  }
+  const chestTex = new THREE.CanvasTexture(chestCanvas); chestTex.colorSpace = THREE.SRGBColorSpace; chestTex.wrapS = chestTex.wrapT = THREE.RepeatWrapping; chestTex.anisotropy = 4;
+  const chestWood = new THREE.MeshStandardMaterial({ color: 0xffffff, map: chestTex, roughness: .84 });
   const chestIron = new THREE.MeshStandardMaterial({ color: 0x6e7778, metalness: .72, roughness: .34 });
   const chestBase = new THREE.Mesh(new THREE.BoxGeometry(1.25, .62, .82), chestWood); chestBase.position.y = .34; chestBase.castShadow = true; chestRoot.add(chestBase);
   const lidPivot = new THREE.Group(); lidPivot.position.set(0, .65, -.39); chestRoot.add(lidPivot);
