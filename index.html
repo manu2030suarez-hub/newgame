@@ -93,11 +93,29 @@ button:hover{background:#294252}
 #lightningFlash{position:fixed;inset:0;z-index:9;pointer-events:none;background:#e8f5ff;opacity:0;mix-blend-mode:screen;transition:opacity .06s linear}
 @media(prefers-reduced-motion:reduce){#lightningFlash{transition:none}}
 #helpPanel{display:none;position:fixed;z-index:125;inset:0;background:#050b0edb;align-items:center;justify-content:center;padding:18px}#helpCard{width:min(760px,96vw);max-height:86vh;overflow:auto;padding:22px;border:1px solid #c5b58b;border-radius:16px;background:linear-gradient(145deg,#29352d,#101713);color:#f3f0dc;box-shadow:0 20px 70px #000b}#helpCard h2{margin:0 0 10px}#helpCard h3{margin:16px 0 5px;color:#e9d39c}#helpCard p,#helpCard li{font-size:13px;line-height:1.5;color:#d5ddcf}#helpCard button{padding:11px 18px;border-radius:8px;background:#354334;color:#f3f0dc;border:1px solid #a5ad91;font-weight:800}#settingsPanel{display:none;position:fixed;z-index:120;inset:0;background:#050b0edb;align-items:center;justify-content:center;padding:18px}#settingsCard{width:min(440px,94vw);padding:24px;border:1px solid #a5ad91;border-radius:16px;background:linear-gradient(145deg,#29352d,#101713);color:#f3f0dc;box-shadow:0 20px 70px #000b}#settingsCard h2{margin:0 0 8px;letter-spacing:.08em}#settingsCard p{color:#c4cbb8;font-size:13px;line-height:1.5}#settingsCard button{width:100%;margin-top:9px;padding:13px;border-radius:8px;border:1px solid #a5ad91;background:#354334;color:#f3f0dc;font-weight:800}#settingsCard button.active{background:#b08b4b;color:#141912;border-color:#e2c98b}#settingsClose{background:#171e19!important}@media(max-width:900px){#touchActions{grid-template-columns:repeat(2,68px);gap:7px}#touchActions button{height:56px}}
+
+/* Introducción cinematográfica de la historia */
+#storyCinema{position:fixed;inset:0;z-index:180;display:none;pointer-events:auto;color:#fff;background:linear-gradient(180deg,#0008,transparent 24%,transparent 70%,#000b);font-family:inherit}
+#storyCinema.active{display:block}
+#storyCinema:before,#storyCinema:after{content:'';position:absolute;left:0;width:100%;height:0;background:#050708;z-index:2;animation:cinemaBars .8s ease forwards}
+#storyCinema:before{top:0}#storyCinema:after{bottom:0;animation-delay:.08s}
+@keyframes cinemaBars{to{height:8.5vh}}
+#storyCinema .cinema-kicker{position:absolute;top:13vh;left:7vw;font-size:11px;letter-spacing:.32em;color:#e6d2a2;text-shadow:0 2px 12px #000}
+#storyCinema .cinema-caption{position:absolute;left:7vw;bottom:15vh;max-width:min(760px,84vw);font-size:clamp(19px,3vw,34px);line-height:1.22;font-weight:500;letter-spacing:.015em;text-shadow:0 3px 18px #000;opacity:0;transition:opacity .7s}
+#storyCinema .cinema-caption.show{opacity:1}
+#storyCinema .cinema-skip{position:absolute;z-index:4;right:24px;bottom:11vh;padding:10px 16px;background:#101820b8;border:1px solid #ffffff75;border-radius:6px;color:#fff;letter-spacing:.08em;font-size:11px}
+#storyMission{position:fixed;z-index:145;left:18px;top:18px;width:min(370px,calc(100vw - 36px));padding:15px 18px;border-left:3px solid #d7b56e;background:linear-gradient(110deg,#101a20ed,#101a20b8);box-shadow:0 8px 30px #0007;color:#f4f0e7;pointer-events:none;opacity:0;transform:translateY(-10px);transition:opacity .7s,transform .7s}
+#storyMission.show{opacity:1;transform:translateY(0)}
+#storyMission small{display:block;color:#d7b56e;font-size:10px;letter-spacing:.2em;font-weight:800;margin-bottom:5px}
+#storyMission strong{display:block;font-size:19px;letter-spacing:.04em;margin-bottom:5px}
+#storyMission span{font-size:12px;color:#d5dfe1;line-height:1.45}
+@media(max-width:600px){#storyCinema .cinema-kicker{top:12vh;left:6vw}#storyCinema .cinema-caption{left:6vw;bottom:16vh}#storyCinema .cinema-skip{right:14px;bottom:10vh}#storyMission{top:10px;left:10px;width:min(330px,calc(100vw - 20px))}}
 </style>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%2214%22 fill=%22%232b766d%22/%3E%3C/svg%3E">
 </head>
 <body>
 <div id="game"></div>
+<div id="storyCinema" aria-live="polite"><div class="cinema-kicker">SURVIVAL PLAYA PRESENTA · URUGUAY</div><div id="cinemaCaption" class="cinema-caption"></div><button id="cinemaSkip" class="cinema-skip">OMITIR INTRODUCCIÓN »</button></div><div id="storyMission"><small>PRIMERA MISIÓN · SUPERVIVENCIA</small><strong>DESPUÉS DEL NAUFRAGIO</strong><span>Revisa los restos del barco. Busca materiales y encuentra un lugar seguro antes de que caiga la noche.</span></div>
 <div id="lightningFlash" aria-hidden="true"></div><div id="lobby"><div id="lobby-card"><div id="lobby-kicker">SURVIVAL PLAYA · MODO HISTORIA</div><h1>LA ISLA<br>NO PERDONA.</h1><p>Despiertas en una costa desconocida. Explora, consigue recursos, construye un refugio y sobrevive al oleaje y a la fauna.</p><button id="startStory">COMENZAR HISTORIA</button><button id="openSettings" style="margin-top:10px;width:100%;padding:13px 22px;border:1px solid #c4c9b1;border-radius:9px;background:linear-gradient(135deg,#3d4b3d,#17221d);color:#f4f0dc;font-weight:900;letter-spacing:.08em">AJUSTES</button><div id="lobby-foot">EXPLORACIÓN LIBRE · SUPERVIVENCIA · MUNDO ABIERTO</div></div></div>
 <div id="helpPanel"><div id="helpCard"><h2>AYUDA DE SUPERVIVENCIA</h2><p>Consejos prácticos para sobrevivir y entender las físicas de la isla.</p><h3>🔥 Cocina con soporte de palos</h3><ul><li>Junta 3 ramas largas y acércate a una fogata encendida.</li><li>Pulsa K para fabricar un soporte: dos palos verticales sostienen un travesaño.</li><li>Con el soporte listo, pulsa K llevando un pez o teniendo carne cruda para colocarla sobre el fuego.</li><li>Los alimentos tardan en cocinarse. No te alejes: un animal hambriento puede robarlos.</li></ul><h3>🥛 Leche caliente</h3><ul><li>Deja la olla de piedra cerca del centro de la fogata, no directamente sobre las llamas.</li><li>La leche se calentará lentamente. Si el cuenco se vuelca, perderás el contenido y la leche derramada puede apagar el fuego.</li><li>El viento fuerte, los golpes y los animales pueden mover o volcar la olla.</li></ul><h3>🐻 Protege la comida</h3><ul><li>Los osos se sienten atraídos por pescado y carne. Los demás animales también pueden intentar beber leche o robar comida.</li><li>Construye paredes y mantén las puertas cerradas para proteger tu zona. Una embestida puede dañar la construcción.</li><li>No dejes comida en el suelo ni te alejes de la fogata.</li></ul><h3>🧱 Construcciones y fauna</h3><ul><li>Las paredes y puertas cerradas deben bloquear el paso de los animales; una puerta abierta deja pasar.</li><li>Si un animal corre y embiste repetidamente, puede romper una pieza debilitada.</li></ul><h3>💡 Consejo</h3><p>Guarda ramas, piedra y comida antes de cocinar. La supervivencia depende tanto de preparar recursos como de vigilar lo que ocurre alrededor.</p><button id="closeHelp">CERRAR AYUDA</button></div></div><div id="settingsPanel"><div id="settingsCard"><h2>AJUSTES · GRÁFICOS</h2><p>Reduce la carga para Android. Los cambios se aplican inmediatamente.</p><button data-quality="low">BAJO · Máximo rendimiento</button><button data-quality="medium">MEDIO · Equilibrado</button><button data-quality="high">ALTO · Mejor calidad</button><button data-quality="auto">AUTOMÁTICO · Recomendado</button><button id="settingsClose">VOLVER</button><p id="qualityHint">Calidad automática</p></div></div><div id="loading"><div id="loadingbox"><b>SURVIVAL PLAYA · SUPERVIVENCIA EXTREMA</b><div class="sub" id="loadmsg">Preparando la isla y cargando al superviviente…</div><div id="bar"><div id="fill"></div></div><div class="sub" style="margin-top:9px">Explora · Construye · Pesca · Sobrevive</div><div class="credits">Modelos 3D: avión light-plane.glb © vinish.dev (CC BY 4.0) · helicóptero lod1.glb (CC0, tevy.dev) · Animales GLB: vinish.dev (CC BY 4.0)</div><div id="err"></div></div></div>
 <div id="hud">
@@ -306,10 +324,62 @@ function finishLoading() {
   loaded = true;
 }
 
+let storyCinemaActive=false, storyCinemaStart=0, storyCinemaSkipped=false;
+const cinemaFrom=new THREE.Vector3(),cinemaTo=new THREE.Vector3(),cinemaLook=new THREE.Vector3();
+function startStoryCinema(){
+ const el=$('storyCinema'),caption=$('cinemaCaption');
+ el.classList.add('active');storyCinemaActive=true;storyCinemaSkipped=false;storyCinemaStart=clock.elapsedTime;
+ gameStarted=false;
+ const lines=[
+  [0,'Costa uruguaya. Atlántico Sur. Una noche de tormenta.'],
+  [4.5,'El viento cambió de golpe. Las olas comenzaron a golpear el casco.'],
+  [9,'Un impacto. Madera que se quiebra. El mar se lo traga todo.'],
+  [14,'Cuando abrís los ojos, el barco ya no está… y no hay nadie a tu alrededor.'],
+  [19,'Solo queda una isla desconocida. Y la supervivencia acaba de comenzar.']
+ ];
+ function setCaption(t){
+  let line=lines[0][1];for(const item of lines){if(t>=item[0])line=item[1];}
+  if(caption.textContent!==line){caption.classList.remove('show');setTimeout(()=>{caption.textContent=line;caption.classList.add('show');},180);}
+ }
+ function finish(){
+  if(!storyCinemaActive)return;
+  storyCinemaActive=false;el.classList.remove('active');gameStarted=true;
+  $('storyMission').classList.add('show');
+  setStatus('Primera misión: revisa los restos del barco y encuentra un lugar seguro.');
+ }
+ $('cinemaSkip').onclick=()=>{storyCinemaSkipped=true;finish();};
+ startStoryCinema.finish=finish;
+}
+function updateStoryCinema(time){
+ if(!storyCinemaActive)return;
+ const t=Math.max(0,time-storyCinemaStart);
+ const wreckX=12,wreckZ=beach.shoreZ(12)+1.5,wreckY=beach.heightAt(wreckX,wreckZ)+1.4;
+ const playerY=player.position.y+1.15;
+ let p0,p1,target,duration;
+ if(t<6){
+  p0.set(wreckX+22,wreckY+15,wreckZ+27);p1.set(wreckX+12,wreckY+8,wreckZ+15);target.set(wreckX,wreckY,wreckZ);duration=6;
+ }else if(t<12){
+  p0.set(wreckX+12,wreckY+8,wreckZ+15);p1.set(wreckX-8,wreckY+4,wreckZ+9);target.set(wreckX,wreckY-.3,wreckZ);duration=6;
+ }else if(t<18){
+  p0.set(wreckX-8,wreckY+4,wreckZ+9);p1.set(wreckX+3,wreckY+2.8,wreckZ-7);target.set(wreckX,wreckY-.4,wreckZ);duration=6;
+ }else if(t<23){
+  p0.set(wreckX+3,wreckY+2.8,wreckZ-7);p1.set(player.position.x+7,playerY+3,player.position.z+8);target.set(player.position.x,playerY,player.position.z);duration=5;
+ }else{startStoryCinema.finish?.();return;}
+ const seg=t<6?0:t<12?1:t<18?2:3,local=(t-seg*6)/duration,ease=local*local*(3-2*local);
+ camera.position.lerpVectors(p0,p1,ease);
+ if(t>=18)target.lerp(new THREE.Vector3(player.position.x,playerY,player.position.z),ease);
+ camera.lookAt(target);
+ camera.fov=52+Math.sin(t*.55)*1.5;camera.updateProjectionMatrix();
+ const captionTime=t<6?0:t<12?4.5:t<18?9:t<23?14:19;
+ const cap=$('cinemaCaption');
+ const captions=['Costa uruguaya. Atlántico Sur. Una noche de tormenta.','El viento cambió de golpe. Las olas comenzaron a golpear el casco.','Un impacto. Madera que se quiebra. El mar se lo traga todo.','Cuando abrís los ojos, el barco ya no está… y no hay nadie a tu alrededor.','Solo queda una isla desconocida. Y la supervivencia acaba de comenzar.'];
+ const ci=captionTime===0?0:captionTime===4.5?1:captionTime===9?2:captionTime===14?3:4;
+ if(cap.dataset.line!==String(ci)){cap.dataset.line=String(ci);cap.classList.remove('show');cap.textContent=captions[ci];requestAnimationFrame(()=>cap.classList.add('show'));}
+}
 $('startStory').addEventListener('click',async()=>{
- if(!loaded||gameStarted)return; $('lobby').style.display='none';
+ if(!loaded||gameStarted||storyCinemaActive)return; $('lobby').style.display='none';
  try{await initializeWorld();}catch(e){console.error(e);$('loading').style.display='none';$('lobby').style.display='flex';setStatus('No se pudo cargar la isla. Intenta nuevamente.');return;}
- gameStarted=true;beginAudio();if(beach.startAudio)beach.startAudio();setStatus('La historia comienza. Explora la costa y busca recursos.');
+ beginAudio();if(beach.startAudio)beach.startAudio();startStoryCinema();
 });
 $('abandonGame').addEventListener('click',()=>{if(confirm('¿Abandonar esta partida y volver al lobby? Se reiniciará la partida actual.'))location.reload();});
 $('openSettings').addEventListener('click',()=>$('settingsPanel').style.display='flex');
@@ -3720,6 +3790,7 @@ function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), .04);
   update(dt, clock.elapsedTime);
+  if(storyCinemaActive)updateStoryCinema(clock.elapsedTime);
   if (beach) updateDayNight(clock.elapsedTime);   // v38.2: sin isla (lobby) no hay cielo que actualizar
   renderer.render(scene, camera);
 }
