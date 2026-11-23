@@ -331,12 +331,12 @@ const storyMissions=[
  {title:'DESPUÉS DEL NAUFRAGIO',desc:'Acércate a los restos del barco y revisa qué quedó después del impacto.',hint:'Camina hasta el naufragio de la orilla.',cinema:'El casco quedó partido contra la costa. Tal vez entre los restos haya algo que todavía sirva.'},
  {title:'LO QUE DEJÓ EL MAR',desc:'Reúne 5 ramas y 4 piedras para preparar un fuego.',hint:'Pulsa E cerca de cada recurso para guardarlo en la mochila.',cinema:'La noche se acerca. Sin fuego, el frío y la oscuridad serán un problema.'},
  {title:'UNA LUZ EN LA COSTA',desc:'Construye una fogata en terreno seco y seguro.',hint:'Pulsa B → Fogata. Coloca el fuego y confirma con un clic.',cinema:'Con los materiales reunidos, llegó el momento de encender la primera señal de vida en esta isla.'},
- {title:'UNA OPORTUNIDAD EN EL AGUA',desc:'Fabrica una caña y consigue pescar un pez.',hint:'Pulsa B → Caña de pescar. Lanza con P y vuelve a pulsar P cuando pique.',cinema:'El mar que destruyó el barco también puede darte alimento. Pero pescar aquí no será tan sencillo.'},
- {title:'LA PRIMERA COMIDA',desc:'Prepara un soporte junto a la fogata, cocina el pescado y recógelo.',hint:'Con el pez en la mano, acércate al fuego y pulsa K. Espera y recoge con E.',cinema:'Con una presa entre las manos, ahora tendrás que cocinarla antes de que algún animal te la robe.'}
+ {title:'UNA OPORTUNIDAD EN EL AGUA',desc:'Fabrica una caña y consigue pescar un pez. Si te faltan materiales, reúne 4 ramas y 1 piedra más.',hint:'Pulsa B → Caña de pescar. Lanza con P y vuelve a pulsar P cuando pique. Acércate al pez que cae en la arena y recógelo con E.',cinema:'El mar que destruyó el barco también puede darte alimento. Pero pescar aquí no será tan sencillo.'},
+ {title:'LA PRIMERA COMIDA',desc:'Reúne 3 ramas si hace falta. Prepara un soporte junto a la fogata, cocina el pescado y recógelo.',hint:'Con el pez en la mano, acércate al fuego. Pulsa K para crear el soporte y otra vez K para colocar el pez. Espera y recógelo con E.',cinema:'Con una presa entre las manos, ahora tendrás que cocinarla antes de que algún animal te la robe.'}
 ];
 function showStoryMission(index){
  const el=$('storyMission'),small=el.querySelector('small'),title=el.querySelector('strong'),desc=el.querySelector('span');
- if(index<0){small.textContent='CAPÍTULO 1 · COMPLETADO';title.textContent='SOBREVIVISTE AL PRIMER DÍA';desc.textContent='Has conseguido fuego, pescado y una oportunidad para seguir adelante. La historia continuará.';el.classList.add('show');return;}
+ if(index<0){small.textContent='CAPÍTULO 1 · COMPLETADO';title.textContent='SOBREVIVISTE AL PRIMER DÍA';desc.textContent='Has conseguido fuego, pescado y una oportunidad para seguir adelante. La historia continuará.';const doneFill=$('storyMissionFill');if(doneFill)doneFill.style.width='100%';el.classList.add('show');return;}
  const m=storyMissions[index];small.textContent='MISIÓN '+(index+1)+' DE 5 · SUPERVIVENCIA';title.textContent=m.title;desc.textContent=m.desc+' '+m.hint;
  const fill=$('storyMissionFill');if(fill)fill.style.width=(index/5*100)+'%';el.classList.add('show');
 }
