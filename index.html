@@ -1857,7 +1857,7 @@ function equipTool(which){
   activeTool=which;updateHeldTool();refreshHotbar();refreshInventory();
 }
 function selectTool(which){
-  if(which==='torch'){if(!torchOwned){setStatus('Todavía no fabricaste una antorcha. Usa B: 3 ramas y 1 piedra.');return;}if(torchFuel<=0){setStatus('La antorcha se consumió por completo. Fabrica otra.');return;}equipTool('torch');setStatus(torchLit?'Antorcha encendida.':'Antorcha apagada: acercate a una fogata encendida y pulsa F.');return;}
+  if(which==='torch'){if(!torchOwned){setStatus('Todavía no fabricaste una antorcha. Usa B: 3 ramas y 1 piedra.');return;}if(torchFuel<=0){setStatus('La antorcha se consumió por completo. Fabrica otra.');return;}equipTool('torch');setStatus(torchLit?'Antorcha encendida.':'Antorcha apagada: acercá la punta a las llamas y pulsá H.');return;}
   if(which==='fist'){equipTool('fist');setStatus('Puño: manos libres. Acércate a un pez y pulsa E (o clic) para recogerlo. Q suelta lo que lleves.');return;}
   if(which==='rod'){
     if(!inventory.fishingRod){setStatus('Todavía no tienes caña. Fabrícala con B (4 ramas + 1 piedra).');return;}
@@ -3412,7 +3412,7 @@ function toggleSit() {
 }
 document.addEventListener('keydown', e => {
   keys[e.code] = true;
-  if (e.code === 'KeyH' && !e.repeat) { toggleSit(); return; }
+  if (e.code === 'KeyH' && !e.repeat && activeTool !== 'torch') { toggleSit(); return; }
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
   if (e.repeat) return;
   if (e.code === 'Escape' && bowlPlacementMode) { cancelBowlPlacement(); return; }
