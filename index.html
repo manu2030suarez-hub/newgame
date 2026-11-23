@@ -716,7 +716,7 @@ function makeHeldTools(){
   torchInnerFlame=new THREE.Mesh(new THREE.ConeGeometry(.033,.19,8,3),new THREE.MeshBasicMaterial({color:0xffe9a6,transparent:true,opacity:.9,side:THREE.DoubleSide,depthWrite:false}));torchInnerFlame.position.set(0,.71,.008);torchTool.add(torchInnerFlame);
   torchLight=new THREE.PointLight(0xff9b4b,0,9,2);torchLight.position.y=.77;torchLight.castShadow=true;torchLight.shadow.mapSize.set(isLowPowerDevice?256:512,isLowPowerDevice?256:512);torchLight.shadow.bias=-.002;torchTool.add(torchLight);
   for(let i=0;i<5;i++){const puff=new THREE.Mesh(new THREE.SphereGeometry(.022+i*.004,7,6),new THREE.MeshBasicMaterial({color:0x77716a,transparent:true,opacity:0,depthWrite:false}));puff.userData.phase=i*.21;torchTool.add(puff);torchSmoke.push(puff);}
-  torchTool.visible=false;
+  torchTool.scale.setScalar(.78);torchTool.visible=false;
 }
 function updateHeldTool(dt=0){
   if(!rightHandBone)return;
@@ -725,7 +725,7 @@ function updateHeldTool(dt=0){
   heldToolRoot.position.copy(_v);heldToolRoot.quaternion.copy(_qW);
   heldToolRoot.position.add(new THREE.Vector3(0,-.015,0).applyQuaternion(_qW));
   axeTool.visible=activeTool==='axe' && tools.axe;knifeTool.visible=activeTool==='knife' && tools.knife;
-  if(torchTool){torchTool.visible=activeTool==='torch'&&torchOwned;torchTool.rotation.set(.10,0,-.12);const burning=torchTool.visible&&torchLit&&torchFuel>0;torchFlame.visible=burning;torchInnerFlame.visible=burning;torchLight.intensity=burning?1.7+.24*Math.sin(performance.now()*.019)+.12*Math.sin(performance.now()*.037):0;torchLight.visible=burning;torchFlame.scale.set(1+.10*Math.sin(performance.now()*.021),.9+.16*Math.sin(performance.now()*.026),1+.08*Math.cos(performance.now()*.019));torchFlame.rotation.z=-.09+Math.sin(performance.now()*.013)*.10;torchInnerFlame.scale.y=.88+.18*Math.sin(performance.now()*.03);for(const puff of torchSmoke){const phase=(performance.now()*.00065+puff.userData.phase)%1;puff.visible=burning;puff.position.set(Math.sin(phase*8+puff.userData.phase)*.025,.88+phase*.26,Math.cos(phase*7+puff.userData.phase)*.02);puff.scale.setScalar(.45+phase*1.3);puff.material.opacity=burning?.16*(1-phase):0;}}
+  if(torchTool){torchTool.visible=activeTool==='torch'&&torchOwned;torchTool.rotation.set(Math.PI+.10,0,-.12);const burning=torchTool.visible&&torchLit&&torchFuel>0;torchFlame.visible=burning;torchInnerFlame.visible=burning;torchLight.intensity=burning?2.15+.30*Math.sin(performance.now()*.019)+.15*Math.sin(performance.now()*.037):0;torchLight.visible=burning;torchFlame.scale.set(1+.10*Math.sin(performance.now()*.021),.9+.16*Math.sin(performance.now()*.026),1+.08*Math.cos(performance.now()*.019));torchFlame.rotation.z=-.09+Math.sin(performance.now()*.013)*.10;torchInnerFlame.scale.y=.88+.18*Math.sin(performance.now()*.03);for(const puff of torchSmoke){const phase=(performance.now()*.00065+puff.userData.phase)%1;puff.visible=burning;puff.position.set(Math.sin(phase*8+puff.userData.phase)*.025,.88+phase*.26,Math.cos(phase*7+puff.userData.phase)*.02);puff.scale.setScalar(.45+phase*1.3);puff.material.opacity=burning?.16*(1-phase):0;}}
   axeTool.rotation.set(.12,0,-.16);knifeTool.rotation.set(.08,0,.04);
   if(toolAction){
     toolActionT+=dt;const t=clamp(toolActionT/.62,0,1);
@@ -1820,7 +1820,7 @@ function updateCampfire(dt,time) {
     if(fire===nearbyCampfire && fire.lit)survival.energy=clamp(survival.energy+dt*2.2,0,100);
   }
   const prompt=$('prompt');
-  if(nearbyCampfire){const canLightTorch=activeTool==='torch'&&!torchLit&&nearbyCampfire.lit&&Math.hypot(nearbyCampfire.x-player.position.x,nearbyCampfire.z-player.position.z)<1.35;prompt.textContent=canLightTorch?'F · Encender antorcha':nearbyCampfire.soaked?'Fogata empapada':nearbyCampfire.lit?'F · Apagar fogata':'F · Encender fogata';prompt.style.display='block';}
+  if(nearbyCampfire){const canLightTorch=activeTool==='torch'&&!torchLit&&nearbyCampfire.lit&&Math.hypot(nearbyCampfire.x-player.position.x,nearbyCampfire.z-player.position.z)<1.35;prompt.textContent=canLightTorch?'H · Encender antorcha':nearbyCampfire.soaked?'Fogata empapada':nearbyCampfire.lit?'F · Apagar fogata':'F · Encender fogata';prompt.style.display='block';}
 }
 
 function hasTool(k){return k==='fist'?true:k==='rod'?(!!inventory.fishingRod&&!rodDrop):k==='torch'?torchOwned:!!tools[k];}
@@ -2067,12 +2067,14 @@ function refreshHotbar() {
 }
 function craftTorch(){
   if(torchOwned&&torchFuel>0){selectTool('torch');return;}
-  if(!spendResources(3,1))return;torchOwned=true;torchLit=false;torchFuel=torchFuelMax;selectTool('torch');refreshHotbar();setStatus('Antorcha fabricada: rama, trapo y resina. Acercate a una fogata encendida y pulsa F para prenderla.');
+  if(!spendResources(3,1))return;torchOwned=true;torchLit=false;torchFuel=torchFuelMax;selectTool('torch');refreshHotbar();setStatus('Antorcha fabricada: rama, trapo y resina. Acercá la punta a una fogata encendida y pulsa H para prenderla.');
 }
 function startTorchIgnition(){
   if(!torchOwned||torchFuel<=0){setStatus('Necesitas fabricar una antorcha nueva con B.');return;}
-  const fire=campfires.find(f=>f.lit&&Math.hypot(f.x-player.position.x,f.z-player.position.z)<1.35);
-  if(!fire){setStatus('Acercate a menos de 2,8 m de una fogata encendida.');return;}
+  if(!torchFlame||!torchTool){setStatus('Equipa la antorcha para acercar su punta al fuego.');return;}
+  torchTool.updateWorldMatrix(true,false);torchFlame.getWorldPosition(_v);
+  const fire=campfires.find(f=>f.lit&&Math.hypot(f.x-_v.x,f.z-_v.z)<1.45&&Math.abs((f.root.position.y+.65)-_v.y)<1.65);
+  if(!fire){setStatus('Acercá la punta de la antorcha hasta las llamas de la fogata.');return;}
   if(torchLit){setStatus('La antorcha ya está encendida.');return;}
   if(rainActive){setStatus('No podés prenderla bajo la lluvia. Busca refugio y espera que pare.');return;}
   torchIgnitionActive=true;torchIgnitionT=0;setStatus('Acercás la antorcha a las llamas para prender la resina…');
@@ -2085,9 +2087,17 @@ function updateTorch(dt){
   if(ground<-.12&&torchFlame){torchFlame.updateWorldMatrix(true,false);torchFlame.getWorldPosition(_v);if(_v.y<=.10){torchLit=false;setStatus('¡El agua del mar alcanzó la llama y apagó la antorcha!');refreshHotbar();return;}}
   torchFuel=Math.max(0,torchFuel-dt);torchUiTimer+=dt;if(torchUiTimer>=1){torchUiTimer=0;refreshHotbar();}if(torchFuel<=0){torchLit=false;setStatus('La resina se consumió y la antorcha se apagó definitivamente. Fabrica otra.');refreshHotbar();}
 }
+function applyTorchCarryPose(){
+  if(!torchLit||activeTool!=='torch'||!B.uarmR||!B.farmR)return;
+  _f.set(-Math.sin(player.rotation.y),0,-Math.cos(player.rotation.y)).normalize();
+  _sideV.crossVectors(worldUp,_f);
+  const upper=new THREE.Vector3(0,-.42,0).addScaledVector(_f,.88).addScaledVector(_sideV,-.16).normalize();
+  const fore=new THREE.Vector3(0,-.08,0).addScaledVector(_f,1).addScaledVector(_sideV,-.08).normalize();
+  aimBone(B.uarmR,B.farmR,upper,1);aimBone(B.farmR,B.handR,fore,1);
+}
 function applyTorchIgnitionPose(time){
   if(!torchIgnitionActive||!B.uarmR||!B.farmR)return;const t=clamp(torchIgnitionT/1.35,0,1);const reach=smooth(clamp(t/.32,0,1))*(1-smooth(clamp((t-.70)/.30,0,1)));
-  const fire=campfires.find(f=>f.lit&&Math.hypot(f.x-player.position.x,f.z-player.position.z)<1.35);if(fire)_f.set(fire.x-player.position.x,0,fire.z-player.position.z).normalize();else _f.set(Math.sin(player.rotation.y),0,Math.cos(player.rotation.y));_sideV.crossVectors(worldUp,_f);const upper=new THREE.Vector3(0,-.72,0).addScaledVector(_f,.82).addScaledVector(_sideV,-.10).normalize();const fore=new THREE.Vector3(0,.12,0).addScaledVector(_f,1).addScaledVector(_sideV,.04).normalize();aimBone(B.uarmR,B.farmR,upper,reach);aimBone(B.farmR,B.handR,fore,reach);
+  const fire=campfires.find(f=>f.lit&&Math.hypot(f.x-player.position.x,f.z-player.position.z)<1.35);if(fire)_f.set(fire.x-player.position.x,0,fire.z-player.position.z).normalize();else _f.set(Math.sin(player.rotation.y),0,Math.cos(player.rotation.y));_sideV.crossVectors(worldUp,_f);const upper=new THREE.Vector3(0,-.42,0).addScaledVector(_f,.88).addScaledVector(_sideV,-.16).normalize();const fore=new THREE.Vector3(0,-.08,0).addScaledVector(_f,1).addScaledVector(_sideV,-.08).normalize();aimBone(B.uarmR,B.farmR,upper,reach);aimBone(B.farmR,B.handR,fore,reach);
 }
 function craftFishingRod() {
   if (inventory.fishingRod) {
@@ -3396,7 +3406,8 @@ document.addEventListener('keydown', e => {
   if (e.code === 'KeyJ') dropRawMeat();
   if (e.code === 'KeyM') { backpackHoldAt=performance.now(); backpackWasLong=false; setTimeout(()=>{if(keys.KeyM){backpackWasLong=true;setBackpackVisible($('inventory').classList.contains('inventory-hidden'));}},320); }
   if (e.code === 'KeyB') toggleCraftPanel();
-  if (e.code === 'KeyF') {if(activeTool==='torch'){if(!torchLit)startTorchIgnition();else setStatus('La antorcha ya está encendida.');}else toggleFire();}
+  if (e.code === 'KeyF') toggleFire();
+  if (e.code === 'KeyH' && activeTool==='torch') {if(!torchLit)startTorchIgnition();else setStatus('La antorcha ya está encendida.');}
   if (e.code === 'KeyX') useTool();
   if (e.code === 'Digit1') selectTool('axe');
   if (e.code === 'Digit2') selectTool('knife');
@@ -3763,6 +3774,7 @@ function update(dt, time) {
   applyBowlCarryPose(time);
   applyDragPose(time);
   applyHoldArms();
+  applyTorchCarryPose();
   applyTorchIgnitionPose(time);
   if(toolAction==='fist'){const pu=Math.sin(Math.PI*clamp(toolActionT/.5,0,1));rw(B.uarmR,1.15*pu);rw(B.farmR,.5*pu);}
   if(toolAction&&toolAction!=='fist'){const wt=toolActionT<.26?smooth(toolActionT/.26):1-smooth((toolActionT-.26)/.36);if(B.uarmR)rw(B.uarmR,-.58*wt);if(B.farmR)rw(B.farmR,.34*wt);}
@@ -3863,9 +3875,9 @@ function updateDayNight(time){
   const dir=new THREE.Vector3(Math.cos(angle)*.82,sunY,Math.sin(angle)*.57).normalize();
   const dawn=clamp(1-Math.abs(sunY)*5,0,1),sunCol=new THREE.Color(0xfff0d7).lerp(new THREE.Color(0xff9b62),dawn*.72);
   sun.position.set(player.position.x+dir.x*60,player.position.y+dir.y*60,player.position.z+dir.z*60);sun.target.position.copy(player.position);sun.target.updateMatrixWorld();sun.color.copy(sunCol);sun.intensity=.035+3.05*day;
-  hemi.intensity=.07+.34*day;hemi.color.set(0x9bb4db).lerp(new THREE.Color(0xbfdcff),day);hemi.groundColor.set(0x202b43).lerp(new THREE.Color(0xd8c49a),day);
-  nightLight.position.set(player.position.x-dir.x*55,player.position.y-dir.y*55,player.position.z-dir.z*55);nightLight.target.position.copy(player.position);nightLight.target.updateMatrixWorld();nightLight.intensity=.13*night;
-  moon.position.copy(player.position).addScaledVector(dir,-82);moon.visible=night>.04;moonGlow.position.copy(moon.position);moonGlow.intensity=.55*night;stars.position.copy(player.position);stars.material.opacity=clamp((night-.12)/.65,0,.88);
+  hemi.intensity=.012+.36*day;hemi.color.set(0x9bb4db).lerp(new THREE.Color(0xbfdcff),day);hemi.groundColor.set(0x202b43).lerp(new THREE.Color(0xd8c49a),day);
+  nightLight.position.set(player.position.x-dir.x*55,player.position.y-dir.y*55,player.position.z-dir.z*55);nightLight.target.position.copy(player.position);nightLight.target.updateMatrixWorld();nightLight.intensity=.035*night;
+  moon.position.copy(player.position).addScaledVector(dir,-82);moon.visible=night>.04;moonGlow.position.copy(moon.position);moonGlow.intensity=.16*night;stars.position.copy(player.position);stars.material.opacity=clamp((night-.12)/.65,0,.88);
   const domeU=beach.dome?.material?.uniforms;if(domeU){domeU.uSunDir.value.set(dir.x,dir.y,dir.z);domeU.uSunCol.value.set(sunCol.r,sunCol.g,sunCol.b);domeU.uZenith.value.set(.008,.018,.065).lerp(new THREE.Vector3(.06,.24,.62),day);domeU.uHorizon.value.set(.025,.04,.105).lerp(new THREE.Vector3(.52,.74,.90),day);}
   const waterU=beach?.water?.material?.uniforms;if(waterU?.uSunDir)waterU.uSunDir.value.set(dir.x,dir.y,dir.z);if(waterU?.uSunCol)waterU.uSunCol.value.set(sunCol.r,sunCol.g,sunCol.b);
   scene.fog.color.set(0x111b31).lerp(new THREE.Color(0x9eb9cc),day);scene.fog.density=.0062-.002*day+(stormActive?.0045:rainActive?.0014:0);renderer.toneMappingExposure=(.68+.35*day)*(stormActive?.78:rainActive?.91:1)+(lightningFlash*.16);
