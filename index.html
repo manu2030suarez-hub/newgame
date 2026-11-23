@@ -132,9 +132,9 @@ button:hover{background:#294252}
   <div class="stat"><span>Humedad</span><div class="track"><div class="fillstat" id="wetFill" style="background:#76b8d4;width:0%"></div></div><span id="wetVal">0</span></div>
 </div>
 <div id="inventory"><b>MOCHILA</b><div>🥥 Cocos enteros: <span id="invCoconut">0</span></div><div>🥥 Cocos abiertos: <span id="invOpenCoconut">0</span></div><div>🪨 Piedras: <span id="invStone">0</span></div><div>🪵 Ramas: <span id="invBranch">0</span></div><div>🪚 Madera: <span id="invWood">0</span></div><div>🪓 Hacha: <span id="invAxe">No</span></div><div>🔪 Cuchillo: <span id="invKnife">No</span></div><div>🔥 Fogata: <span id="invFire">No</span></div><div>🎣 Caña: <span id="invRod">No</span></div><div>✋ Manos: <span id="invHands">izq: libre · der: libre</span></div><div>🐟 Pez crudo en manos: <span id="invFishRaw">0</span></div><div>🍖 Pez cocido en manos: <span id="invFishCooked">0</span></div><div>🦅 Carne de gaviota: <span id="invGullMeat">0 cruda · 0 cocida</span></div><div style="color:#c0cbd3">B: fabricar · F: fuego · P: pescar · E: recoger a mochila · mantener E: tomar en mano · Q: soltar objeto de una mano · Clic der. (mantener): apuntar con trayectoria · Clic izq.: lanzar · Rueda al apuntar: potencia · T: lanzamiento rápido · X: usar herramienta · M: mantener para ocultar mochila / toque para comer · K: montar soporte de 3 palos y cocinar sobre él · J: dejar carne cruda en el suelo · C: beber agua/leche · X con dos piedras en mano: tallar olla (8 golpes) · E cerca de una vaca confiada: ordeñar · E con cuchillo junto a un cadáver: cortar carne · mantener E sin cuchillo: arrastrar</div><div style="color:#c0cbd3">G: construir · clic izq./Enter: colocar · R: girar · Rueda: piezas · rueda pulsada sobre mapa: marcar destino</div><div style="color:#e6cf9d">🚢 Barcos: llegan desde el horizonte, descargan la caja en arena y se marchan mar adentro · E: abrir caja / alimentar animales · Sobrevive 30 min</div><div id="testModeLabel" style="color:#c0cbd3">Pruebas: física Rapier V24</div></div>
-<div id="hotbar"><button class="hot-slot" id="slotAxe"><span class="slot-icon">🪓</span><span class="slot-name">Bolsillo izq.</span><span class="slot-key">1 · Hacha</span></button><button class="hot-slot" id="slotKnife"><span class="slot-icon">🔪</span><span class="slot-name">Bolsillo der.</span><span class="slot-key">2 · Cuchillo</span></button><button class="hot-slot locked" id="slotRod" title="Caña de pescar: activa / inactiva (tecla 3)"><span class="slot-icon">🎣</span><span class="slot-name">Caña</span><span class="slot-key" id="slotRodState">3 · Sin fabricar</span></button><button class="hot-slot selected" id="slotFist" title="Puño: manos libres para recoger peces (tecla 4)"><span class="slot-icon">👊</span><span class="slot-name">Puño</span><span class="slot-key">4 · manos</span></button></div>
+<div id="hotbar"><button class="hot-slot" id="slotAxe"><span class="slot-icon">🪓</span><span class="slot-name">Bolsillo izq.</span><span class="slot-key">1 · Hacha</span></button><button class="hot-slot" id="slotKnife"><span class="slot-icon">🔪</span><span class="slot-name">Bolsillo der.</span><span class="slot-key">2 · Cuchillo</span></button><button class="hot-slot locked" id="slotRod" title="Caña de pescar: activa / inactiva (tecla 3)"><span class="slot-icon">🎣</span><span class="slot-name">Caña</span><span class="slot-key" id="slotRodState">3 · Sin fabricar</span></button><button class="hot-slot locked" id="slotTorch" title="Antorcha artesanal (tecla 5)"><span class="slot-icon">🔥</span><span class="slot-name">Antorcha</span><span class="slot-key" id="slotTorchState">5 · Sin fabricar</span></button><button class="hot-slot selected" id="slotFist" title="Puño: manos libres para recoger peces (tecla 4)"><span class="slot-icon">👊</span><span class="slot-name">Puño</span><span class="slot-key">4 · manos</span></button></div>
 <div id="dropChoice" role="dialog" aria-modal="true"><b>¿Qué quieres soltar?</b><div id="dropChoiceOptions"></div><button id="dropChoiceClose">Cancelar</button></div><div id="handChoice"><b id="handChoiceTitle">¿Con qué mano quieres recogerlo?</b><div style="display:flex;gap:10px;margin-top:10px"><button id="chooseLeft">✋ Mano izquierda</button><button id="chooseRight">🤚 Mano derecha</button></div><small style="display:block;color:#c0cbd3;margin-top:8px">Clic izquierdo = mano izquierda · Clic derecho = mano derecha · Esc = cancelar</small><button id="chooseCancel" style="margin-top:8px;min-width:0;padding:8px 14px">Cancelar</button></div><div id="dayClock">☀️ 06:00 · Amanecer</div><div id="fishAlert" role="status" aria-live="assertive">🐟 ¡PEZ ENGANCHADO! · Recogiéndolo…</div><div id="cross"></div><div id="prompt"></div>
- <div id="craftPanel"><h3>Fabricación</h3><div class="hint">Combina los recursos de tu mochila para crear equipo y construir.</div><button id="craftAxe"><span>🪓 Hacha de piedra</span><small>3 piedras · 2 ramas</small></button><button id="craftKnife"><span>🔪 Cuchillo de piedra</span><small>2 piedras · 1 rama</small></button><button id="buildFire"><span>🔥 Construir fogata</span><small>5 ramas · 4 piedras</small></button><button id="craftRod"><span>🎣 Caña de pescar artesanal</span><small>4 ramas · 1 piedra</small></button><button id="craftBowl"><span>🪨 Tallar olla de piedra</span><small>Necesitas sostener 2 piedras y golpearlas con X (8 golpes)</small></button><button id="buildMode"><span>🪵 Modo construcción</span><small>G · rueda: elegir pieza</small></button><button id="craftClose">Cerrar [B]</button></div>
+ <div id="craftPanel"><h3>Fabricación</h3><div class="hint">Combina los recursos de tu mochila para crear equipo y construir.</div><button id="craftAxe"><span>🪓 Hacha de piedra</span><small>3 piedras · 2 ramas</small></button><button id="craftKnife"><span>🔪 Cuchillo de piedra</span><small>2 piedras · 1 rama</small></button><button id="buildFire"><span>🔥 Construir fogata</span><small>5 ramas · 4 piedras</small></button><button id="craftRod"><span>🎣 Caña de pescar artesanal</span><small>4 ramas · 1 piedra</small></button><button id="craftTorch"><span>🔥 Antorcha artesanal</span><small>3 ramas · 1 piedra</small></button><button id="craftBowl"><span>🪨 Tallar olla de piedra</span><small>Necesitas sostener 2 piedras y golpearlas con X (8 golpes)</small></button><button id="buildMode"><span>🪵 Modo construcción</span><small>G · rueda: elegir pieza</small></button><button id="craftClose">Cerrar [B]</button></div>
  <div id="status">Preparando motor 3D…</div>
  <div id="touchControls" aria-label="Controles táctiles">
   <div id="touchStick"><div id="touchNub"></div></div>
@@ -651,6 +651,8 @@ let coconutHitCooldown = 0, survivalUiTimer = 0;
 const campfires = [];
 let nearbyCampfire = null, campfireBuilding = null, campfirePlacementMode=false, campfirePreview=null, campfirePreviewValid=false, campfirePlacementClickConsumed=false;
 let rightHandBone=null, heldToolRoot=null, axeTool=null, knifeTool=null, fishingRodModel=null;
+let torchTool=null, torchFlame=null, torchInnerFlame=null, torchLight=null, torchSmoke=[];
+let torchOwned=false, torchLit=false, torchFuel=0, torchFuelMax=150, torchIgnitionActive=false, torchIgnitionT=0;
 let toolAction=null, toolActionT=0, toolImpactDone=false, nearbyPalm=null;
 const palmDamage = new Map(); const harvestedPalms = new Set(); const impactBits=[];
 let buildMode=false, buildRotation=0, buildGhost=null; const builtStructures=[];
@@ -702,6 +704,19 @@ function makeHeldTools(){
   const tip=new THREE.Mesh(new THREE.SphereGeometry(.018,8,6),new THREE.MeshStandardMaterial({color:0x29251f,roughness:.7}));tip.position.set(.27,1.88,-.02);fishingRodModel.add(tip);
   const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(.27,1.88,-.02),new THREE.Vector3(.52,.25,-.12)]),new THREE.LineBasicMaterial({color:0xd8d0b8,transparent:true,opacity:.8}));fishingRodModel.add(line);
   axeTool.visible=false;knifeTool.visible=false;fishingRodModel.visible=false;
+  torchTool=new THREE.Group();heldToolRoot.add(torchTool);
+  const shaftMat=new THREE.MeshStandardMaterial({color:0x65452e,roughness:.98});
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.035,.049,.62,10,3),shaftMat);shaft.position.y=.10;shaft.castShadow=true;torchTool.add(shaft);
+  const bindingMat=new THREE.MeshStandardMaterial({color:0x9b805b,roughness:1});
+  for(let i=0;i<5;i++){const band=new THREE.Mesh(new THREE.TorusGeometry(.052,.009,6,14),bindingMat);band.rotation.x=Math.PI/2;band.position.y=.29+i*.035;torchTool.add(band);}
+  const cloth=new THREE.Mesh(new THREE.CylinderGeometry(.068,.052,.18,9),new THREE.MeshStandardMaterial({color:0x8b7759,roughness:1}));cloth.position.y=.48;cloth.rotation.z=-.08;cloth.castShadow=true;torchTool.add(cloth);
+  const resin=new THREE.Mesh(new THREE.SphereGeometry(.065,10,8),new THREE.MeshStandardMaterial({color:0x302015,roughness:.72}));resin.scale.set(1,.72,1);resin.position.y=.57;torchTool.add(resin);
+  const flameMat=new THREE.MeshStandardMaterial({color:0xff7924,emissive:0xff4a0a,emissiveIntensity:3.4,roughness:.3,transparent:true,opacity:.96,side:THREE.DoubleSide,depthWrite:false});
+  torchFlame=new THREE.Mesh(new THREE.ConeGeometry(.072,.32,10,4),flameMat);torchFlame.position.y=.77;torchFlame.rotation.z=-.09;torchTool.add(torchFlame);
+  torchInnerFlame=new THREE.Mesh(new THREE.ConeGeometry(.033,.19,8,3),new THREE.MeshBasicMaterial({color:0xffe9a6,transparent:true,opacity:.9,side:THREE.DoubleSide,depthWrite:false}));torchInnerFlame.position.set(0,.71,.008);torchTool.add(torchInnerFlame);
+  torchLight=new THREE.PointLight(0xff9b4b,0,9,2);torchLight.position.y=.77;torchLight.castShadow=!isLowPowerDevice;torchLight.shadow.mapSize.set(512,512);torchLight.shadow.bias=-.002;torchTool.add(torchLight);
+  for(let i=0;i<5;i++){const puff=new THREE.Mesh(new THREE.SphereGeometry(.022+i*.004,7,6),new THREE.MeshBasicMaterial({color:0x77716a,transparent:true,opacity:0,depthWrite:false}));puff.userData.phase=i*.21;torchTool.add(puff);torchSmoke.push(puff);}
+  torchTool.visible=false;
 }
 function updateHeldTool(dt=0){
   if(!rightHandBone)return;
@@ -710,6 +725,7 @@ function updateHeldTool(dt=0){
   heldToolRoot.position.copy(_v);heldToolRoot.quaternion.copy(_qW);
   heldToolRoot.position.add(new THREE.Vector3(0,-.015,0).applyQuaternion(_qW));
   axeTool.visible=activeTool==='axe' && tools.axe;knifeTool.visible=activeTool==='knife' && tools.knife;
+  if(torchTool){torchTool.visible=activeTool==='torch'&&torchOwned;torchTool.rotation.set(.10,0,-.12);const burning=torchTool.visible&&torchLit&&torchFuel>0;torchFlame.visible=burning;torchInnerFlame.visible=burning;torchLight.intensity=burning?1.7+.24*Math.sin(performance.now()*.019)+.12*Math.sin(performance.now()*.037):0;torchLight.visible=burning;torchFlame.scale.set(1+.10*Math.sin(performance.now()*.021),.9+.16*Math.sin(performance.now()*.026),1+.08*Math.cos(performance.now()*.019));torchFlame.rotation.z=-.09+Math.sin(performance.now()*.013)*.10;torchInnerFlame.scale.y=.88+.18*Math.sin(performance.now()*.03);for(const puff of torchSmoke){const phase=(performance.now()*.00065+puff.userData.phase)%1;puff.visible=burning;puff.position.set(Math.sin(phase*8+puff.userData.phase)*.025,.88+phase*.26,Math.cos(phase*7+puff.userData.phase)*.02);puff.scale.setScalar(.45+phase*1.3);puff.material.opacity=burning?.16*(1-phase):0;}}
   axeTool.rotation.set(.12,0,-.16);knifeTool.rotation.set(.08,0,.04);
   if(toolAction){
     toolActionT+=dt;const t=clamp(toolActionT/.62,0,1);
@@ -1807,7 +1823,7 @@ function updateCampfire(dt,time) {
   if(nearbyCampfire){prompt.textContent=nearbyCampfire.soaked?'Fogata empapada':nearbyCampfire.lit?'F · Apagar fogata':'F · Encender fogata';prompt.style.display='block';}
 }
 
-function hasTool(k){return k==='fist'?true:k==='rod'?(!!inventory.fishingRod&&!rodDrop):!!tools[k];}
+function hasTool(k){return k==='fist'?true:k==='rod'?(!!inventory.fishingRod&&!rodDrop):k==='torch'?torchOwned:!!tools[k];}
 function equipTool(which){
   if(activeTool==='rod'&&which!=='rod')cancelFishing();
   if(which!=='fist'&&hands.R){   // la mano derecha va a empuñar la herramienta
@@ -1817,6 +1833,7 @@ function equipTool(which){
   activeTool=which;updateHeldTool();refreshHotbar();refreshInventory();
 }
 function selectTool(which){
+  if(which==='torch'){if(!torchOwned){setStatus('Todavía no fabricaste una antorcha. Usa B: 3 ramas y 1 piedra.');return;}if(torchFuel<=0){setStatus('La antorcha se consumió por completo. Fabrica otra.');return;}equipTool('torch');setStatus(torchLit?'Antorcha encendida.':'Antorcha apagada: acercate a una fogata encendida y pulsa F.');return;}
   if(which==='fist'){equipTool('fist');setStatus('Puño: manos libres. Acércate a un pez y pulsa E (o clic) para recogerlo. Q suelta lo que lleves.');return;}
   if(which==='rod'){
     if(!inventory.fishingRod){setStatus('Todavía no tienes caña. Fabrícala con B (4 ramas + 1 piedra).');return;}
@@ -1829,13 +1846,14 @@ function selectTool(which){
   equipTool(which);
 }
 function cycleTool(direction){
-  const available=['axe','knife','rod','fist'].filter(hasTool);if(!available.length)return;
+  const available=['axe','knife','rod','torch','fist'].filter(hasTool);if(!available.length)return;
   let i=available.indexOf(activeTool);if(i<0)i=0;else i=(i+direction+available.length)%available.length;
   equipTool(available[i]);
 }
 $('slotAxe').addEventListener('click',()=>selectTool('axe'));
 $('slotKnife').addEventListener('click',()=>selectTool('knife'));
 $('slotRod').addEventListener('click',()=>selectTool('rod'));
+$('slotTorch').addEventListener('click',()=>selectTool('torch'));
 $('slotFist').addEventListener('click',()=>selectTool('fist'));
 function setBackpackVisible(visible){$('inventory').classList.toggle('inventory-hidden',!visible);}
 function toggleCraftPanel(force) {
@@ -1847,6 +1865,7 @@ $('craftAxe').onclick=()=>craftTool('axe');
 $('craftKnife').onclick=()=>craftTool('knife');
 $('buildFire').onclick=buildCampfire;
 $('craftRod').onclick=craftFishingRod;
+$('craftTorch').onclick=craftTorch;
 $('craftBowl').onclick=()=>setStatus('Sostén dos piedras, una en cada mano, y pulsa X ocho veces para tallar una olla de piedra.');
 $('buildMode').onclick=toggleBuildMode;
 $('craftClose').onclick=()=>toggleCraftPanel(false);
@@ -2042,8 +2061,33 @@ function refreshHotbar() {
   $('slotAxe').classList.toggle('selected', activeTool === 'axe');
   $('slotKnife').classList.toggle('selected', activeTool === 'knife');
   $('slotFist').classList.toggle('selected', activeTool === 'fist');
+  const ts=$('slotTorch');ts.classList.toggle('selected',activeTool==='torch'&&torchOwned);ts.classList.toggle('locked',!torchOwned);$('slotTorchState').textContent=!torchOwned?'5 · Sin fabricar':torchFuel<=0?'5 · Consumida':torchLit?`5 · ${Math.ceil(torchFuel)} s`:'5 · Apagada';
   const rs = $('slotRod'); rs.classList.toggle('selected', activeTool === 'rod' && inventory.fishingRod && !rodDrop); rs.classList.toggle('locked', !inventory.fishingRod);
   $('slotRodState').textContent = !inventory.fishingRod ? '3 · Sin fabricar' : rodDrop ? '3 · en el suelo' : activeTool === 'rod' ? '3 · ACTIVA' : '3 · inactiva';
+}
+function craftTorch(){
+  if(torchOwned&&torchFuel>0){selectTool('torch');return;}
+  if(!spendResources(3,1))return;torchOwned=true;torchLit=false;torchFuel=torchFuelMax;selectTool('torch');refreshHotbar();setStatus('Antorcha fabricada: rama, trapo y resina. Acercate a una fogata encendida y pulsa F para prenderla.');
+}
+function startTorchIgnition(){
+  if(!torchOwned||torchFuel<=0){setStatus('Necesitas fabricar una antorcha nueva con B.');return;}
+  const fire=campfires.find(f=>f.lit&&Math.hypot(f.x-player.position.x,f.z-player.position.z)<2.8);
+  if(!fire){setStatus('Acercate a menos de 2,8 m de una fogata encendida.');return;}
+  if(torchLit){setStatus('La antorcha ya está encendida.');return;}
+  if(rainActive){setStatus('No podés prenderla bajo la lluvia. Busca refugio y espera que pare.');return;}
+  torchIgnitionActive=true;torchIgnitionT=0;setStatus('Acercás la antorcha a las llamas para prender la resina…');
+}
+function updateTorch(dt){
+  if(torchIgnitionActive){if(rainActive){torchIgnitionActive=false;setStatus('La lluvia no te deja prender la antorcha.');}else{torchIgnitionT+=dt;if(torchIgnitionT>=1.35){torchIgnitionActive=false;torchLit=true;setStatus('¡La resina prendió! La antorcha está encendida.');}}}
+  if(!torchOwned||!torchLit)return;
+  if(rainActive){torchLit=false;setStatus('La lluvia apagó la antorcha. Volvé a encenderla en una fogata.');return;}
+  const ground=beach.heightAt(player.position.x,player.position.z);
+  if(ground<-.12&&torchFlame){torchFlame.updateWorldMatrix(true,false);torchFlame.getWorldPosition(_v);if(_v.y<=.10){torchLit=false;setStatus('¡El agua del mar alcanzó la llama y apagó la antorcha!');return;}}
+  torchFuel=Math.max(0,torchFuel-dt);if(torchFuel<=0){torchLit=false;setStatus('La resina se consumió y la antorcha se apagó definitivamente. Fabrica otra.');}
+}
+function applyTorchIgnitionPose(time){
+  if(!torchIgnitionActive||!B.uarmR||!B.farmR)return;const t=clamp(torchIgnitionT/1.35,0,1);const reach=smooth(clamp(t/.32,0,1))*(1-smooth(clamp((t-.70)/.30,0,1)));
+  _f.set(Math.sin(player.rotation.y),0,Math.cos(player.rotation.y));_sideV.crossVectors(worldUp,_f);const upper=new THREE.Vector3(0,-.72,0).addScaledVector(_f,.82).addScaledVector(_sideV,-.10).normalize();const fore=new THREE.Vector3(0,.12,0).addScaledVector(_f,1).addScaledVector(_sideV,.04).normalize();aimBone(B.uarmR,B.farmR,upper,reach);aimBone(B.farmR,B.handR,fore,reach);
 }
 function craftFishingRod() {
   if (inventory.fishingRod) {
@@ -3352,12 +3396,13 @@ document.addEventListener('keydown', e => {
   if (e.code === 'KeyJ') dropRawMeat();
   if (e.code === 'KeyM') { backpackHoldAt=performance.now(); backpackWasLong=false; setTimeout(()=>{if(keys.KeyM){backpackWasLong=true;setBackpackVisible($('inventory').classList.contains('inventory-hidden'));}},320); }
   if (e.code === 'KeyB') toggleCraftPanel();
-  if (e.code === 'KeyF') toggleFire();
+  if (e.code === 'KeyF') {if(activeTool==='torch'&&!torchLit)startTorchIgnition();else toggleFire();}
   if (e.code === 'KeyX') useTool();
   if (e.code === 'Digit1') selectTool('axe');
   if (e.code === 'Digit2') selectTool('knife');
   if (e.code === 'Digit3') selectTool('rod');
   if (e.code === 'Digit4') selectTool('fist');
+  if (e.code === 'Digit5') selectTool('torch');
   if (e.code === 'KeyQ') {if(stoneBowlHeld){dropStoneBowl();return;}if(heldThrowables.L||heldThrowables.R||hands.L||hands.R||activeTool==='rod'||activeTool==='axe'||activeTool==='knife')openDropChoice();else dropInventoryCoconut();}
   if (e.code === 'KeyT') throwHeldThrowable();
   if (e.code === 'KeyG') toggleBuildMode();
@@ -3540,6 +3585,7 @@ function update(dt, time) {
   if (!loaded || !gameStarted) { if(beach)beach.update(dt,time,player.position,camera,Math.min(1,stormWind/14));if(cave)cave.update(dt,time); return; }
 
   updateThrowState(dt);
+  updateTorch(dt);
   // 1) Volver los huesos controlados a su reposo (el mixer los pisa cuando hay animación activa)
   for (const [b, q] of restQ) b.quaternion.copy(q);
   if (B.chest) B.chest.scale.set(1, 1, 1);
@@ -3717,6 +3763,7 @@ function update(dt, time) {
   applyBowlCarryPose(time);
   applyDragPose(time);
   applyHoldArms();
+  applyTorchIgnitionPose(time);
   if(toolAction==='fist'){const pu=Math.sin(Math.PI*clamp(toolActionT/.5,0,1));rw(B.uarmR,1.15*pu);rw(B.farmR,.5*pu);}
   if(toolAction&&toolAction!=='fist'){const wt=toolActionT<.26?smooth(toolActionT/.26):1-smooth((toolActionT-.26)/.36);if(B.uarmR)rw(B.uarmR,-.58*wt);if(B.farmR)rw(B.farmR,.34*wt);}
 
@@ -3817,7 +3864,7 @@ function updateDayNight(time){
   const dawn=clamp(1-Math.abs(sunY)*5,0,1),sunCol=new THREE.Color(0xfff0d7).lerp(new THREE.Color(0xff9b62),dawn*.72);
   sun.position.set(player.position.x+dir.x*60,player.position.y+dir.y*60,player.position.z+dir.z*60);sun.target.position.copy(player.position);sun.target.updateMatrixWorld();sun.color.copy(sunCol);sun.intensity=.035+3.05*day;
   hemi.intensity=.07+.34*day;hemi.color.set(0x9bb4db).lerp(new THREE.Color(0xbfdcff),day);hemi.groundColor.set(0x202b43).lerp(new THREE.Color(0xd8c49a),day);
-  nightLight.position.set(player.position.x-dir.x*55,player.position.y-dir.y*55,player.position.z-dir.z*55);nightLight.target.position.copy(player.position);nightLight.target.updateMatrixWorld();nightLight.intensity=.32*night;
+  nightLight.position.set(player.position.x-dir.x*55,player.position.y-dir.y*55,player.position.z-dir.z*55);nightLight.target.position.copy(player.position);nightLight.target.updateMatrixWorld();nightLight.intensity=.13*night;
   moon.position.copy(player.position).addScaledVector(dir,-82);moon.visible=night>.04;moonGlow.position.copy(moon.position);moonGlow.intensity=.55*night;stars.position.copy(player.position);stars.material.opacity=clamp((night-.12)/.65,0,.88);
   const domeU=beach.dome?.material?.uniforms;if(domeU){domeU.uSunDir.value.set(dir.x,dir.y,dir.z);domeU.uSunCol.value.set(sunCol.r,sunCol.g,sunCol.b);domeU.uZenith.value.set(.008,.018,.065).lerp(new THREE.Vector3(.06,.24,.62),day);domeU.uHorizon.value.set(.025,.04,.105).lerp(new THREE.Vector3(.52,.74,.90),day);}
   const waterU=beach?.water?.material?.uniforms;if(waterU?.uSunDir)waterU.uSunDir.value.set(dir.x,dir.y,dir.z);if(waterU?.uSunCol)waterU.uSunCol.value.set(sunCol.r,sunCol.g,sunCol.b);
