@@ -368,7 +368,15 @@ function updateStoryMissions(){
  if(!gameStarted||storyCinemaActive||storyChapterComplete||storyMissionTransitioning||storyMissionIndex<0||storyMissionIndex>=5)return;
  const dWreck=Math.hypot(player.position.x-12,player.position.z-(beach.shoreZ(12)+1.5));
  const hasCaughtFish=groundFish.some(f=>f.state==='ground')||['L','R'].some(side=>hands[side]&&hands[side].kind!=='gull');
- let complete=false;
+ let complete=false,progress=0,detail=storyMissions[storyMissionIndex].desc+' '+storyMissions[storyMissionIndex].hint;
+ if(storyMissionIndex===0){progress=Math.max(0,Math.min(100,(1-dWreck/20)*100));detail='Acércate a los restos del barco. Distancia aproximada: '+Math.max(0,Math.round(dWreck))+' m.';}
+ else if(storyMissionIndex===1){progress=(Math.min(5,inventory.branch)/5+Math.min(4,inventory.stone)/4)*50;detail='Ramas: '+Math.min(5,inventory.branch)+'/5 · Piedras: '+Math.min(4,inventory.stone)+'/4. Pulsa E cerca de cada recurso para guardarlo.';}
+ else if(storyMissionIndex===2){progress=campfires.length?100:0;detail=campfires.length?'Fogata construida.':'Fogata pendiente · Necesitas 5 ramas y 4 piedras. Pulsa B y elige Fogata.';}
+ else if(storyMissionIndex===3){progress=(inventory.fishingRod?50:0)+(hasCaughtFish?50:0);detail='Caña: '+(inventory.fishingRod?'fabricada':'pendiente')+' · Pez: '+(hasCaughtFish?'capturado':'pendiente')+'. B → Caña; P para lanzar y P cuando pique.';}
+ else if(storyMissionIndex===4){progress=inventory.fishCooked>mission5FishCookedStart?100:0;detail='Pescado cocido recogido: '+Math.max(0,inventory.fishCooked-mission5FishCookedStart)+'/1. Si falta, reúne 3 ramas, pulsa K para crear el soporte y K otra vez para poner el pez.';}
+ const missionDesc=$('storyMission').querySelector('span'),missionFill=$('storyMissionFill');
+ if(missionDesc&&missionDesc.textContent!==detail)missionDesc.textContent=detail;
+ if(missionFill)missionFill.style.width=progress+'%';
  if(storyMissionIndex===0)complete=dWreck<6.5;
  else if(storyMissionIndex===1)complete=inventory.branch>=5&&inventory.stone>=4;
  else if(storyMissionIndex===2)complete=campfires.length>0;
