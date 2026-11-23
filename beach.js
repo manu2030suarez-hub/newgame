@@ -812,6 +812,8 @@ function create(scene, renderer, opts = {}) {
   jungleCanopy.castShadow = jungleCanopy.receiveShadow = true;
   undergrowth.castShadow = true;
   jungleTrunks.frustumCulled = jungleCanopy.frustumCulled = undergrowth.frustumCulled = false;
+  jungleCanopy.count = canopyIndex;
+  undergrowth.count = underIndex;
   jungleGroup.add(jungleTrunks, jungleCanopy, undergrowth);
 
   // Troncos caídos y vegetación baja rompen la regularidad del bosque.
