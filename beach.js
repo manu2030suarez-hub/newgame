@@ -1,6 +1,7 @@
 // beach.js — Playa realista procedural (sin texturas externas)
 // Namespace: BeachWorld  ·  Uso:  const beach = BeachWorld.create(scene, renderer, { sun, hemi });
 import * as THREE from 'three';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/loaders/GLTFLoader.js';
 
 const clamp = THREE.MathUtils.clamp, lerp = THREE.MathUtils.lerp;
 function rockRandSafe(i,s){let x=(i+1)*374761393+(s+7)*668265263;x=Math.imul(x^(x>>>13),1274126177);return ((x^(x>>>16))>>>0)/4294967295;}
@@ -387,17 +388,15 @@ function createShipwreck(scene, opts = {}) {
   group.name = 'shipwreck';
   scene.add(group);
 
-  const loader = opts.gltfLoader;
-  if (!loader) {
-    console.warn('Naufragio: no hay GLTFLoader disponible.');
-    return group;
-  }
+  // El escenario puede cargar el naufragio por sí mismo si no recibe un loader externo.
+  const loader = opts.gltfLoader || new GLTFLoader();
+  const modelUrl = new URL('./shipwreck.glb', import.meta.url).href;
 
   const x = opts.x ?? 12;
   const z = opts.z ?? (shoreZ(x) + 1.5);
   const targetLength = 12.0;
 
-  loader.load('./shipwreck.glb', (gltf) => {
+  loader.load(modelUrl, (gltf) => {
     const model = gltf.scene;
     model.name = 'shipwreck-model';
     model.rotation.set(opts.pitch ?? -0.04, opts.yaw ?? 0.35, opts.tiltRoll ?? 0.14);
@@ -426,7 +425,7 @@ function createShipwreck(scene, opts = {}) {
       obj.receiveShadow = true;
     });
 
-    group.position.set(x, terrainH(x, z) - 0.42 - bounds.min.y, z);
+    group.position.set(x, terrainH(x, z) - (opts.sink ?? 0.18) - bounds.min.y, z);
     group.add(model);
     group.updateMatrixWorld(true);
 
@@ -445,7 +444,7 @@ function createShipwreck(scene, opts = {}) {
     }
     console.info('Naufragio cargado:', 'shipwreck.glb');
   }, undefined, (error) => {
-    console.error('No se pudo cargar shipwreck.glb:', error);
+    console.error('No se pudo cargar shipwreck.glb desde', modelUrl, error);
   });
 
   return group;
