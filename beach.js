@@ -747,7 +747,7 @@ function create(scene, renderer, opts = {}) {
   const jungleRand = mulberry32(731942);
   const jungleCenter = { x: 94, z: 137 };
   const jungleTrees = [];
-  const jungleTreeCount = 126;
+  const jungleTreeCount = 0; // Árboles de la selva ocultos temporalmente.
   const jungleTrunkGeo = new THREE.CylinderGeometry(.24, .62, 1, 9, 3);
   const jungleTrunkMat = new THREE.MeshStandardMaterial({ color: 0x59402b, roughness: .96 });
   const canopyGeo = new THREE.IcosahedronGeometry(1, 2);
@@ -844,7 +844,9 @@ function create(scene, renderer, opts = {}) {
     const rand = mulberry32(seed);
     const plantGroup = new THREE.Group();
     plantGroup.name = fileName.replace('.glb', '-scatter');
-    for (let i = 0; i < count; i++) {
+    let placed = 0, tries = 0;
+    while (placed < count && tries < count * 24) {
+      tries++;
       const angle = rand() * Math.PI * 2;
       const radius = 5 + Math.sqrt(rand()) * 68;
       const x = jungleCenter.x + Math.cos(angle) * radius;
@@ -866,15 +868,17 @@ function create(scene, renderer, opts = {}) {
         // No se sustituyen los materiales ni las texturas originales de los GLB.
       });
       plantGroup.add(plant);
+      placed++;
     }
     jungleGroup.add(plantGroup);
+    console.info(`Selva: ${fileName} colocadas ${placed}/${count} plantas.`);
   }
   jungleAssetLoader.load(new URL('./sunburst-fern-standard.glb', import.meta.url).href,
-    gltf => scatterJungleAsset(gltf, 'sunburst-fern-standard.glb', 38, 1.15, 2.35, 8812),
+    gltf => scatterJungleAsset(gltf, 'sunburst-fern-standard.glb', 78, 1.15, 2.35, 8812),
     undefined,
     error => console.error('No se pudo cargar sunburst-fern-standard.glb', error));
   jungleAssetLoader.load(new URL('./glowcap-cluster-standard.glb', import.meta.url).href,
-    gltf => scatterJungleAsset(gltf, 'glowcap-cluster-standard.glb', 20, .65, 1.35, 19371),
+    gltf => scatterJungleAsset(gltf, 'glowcap-cluster-standard.glb', 42, .65, 1.35, 19371),
     undefined,
     error => console.error('No se pudo cargar glowcap-cluster-standard.glb', error));
 
