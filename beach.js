@@ -399,7 +399,8 @@ function createShipwreck(scene, opts = {}) {
   loader.load(modelUrl, (gltf) => {
     const model = gltf.scene;
     model.name = 'shipwreck-model';
-    model.rotation.set(opts.pitch ?? -0.04, opts.yaw ?? 0.35, opts.tiltRoll ?? 0.14);
+    // El casco debe verse prácticamente derecho; solo conserva una leve inclinación natural.
+    model.rotation.set(opts.pitch ?? 0, opts.yaw ?? 0.35, opts.tiltRoll ?? 0.025);
     model.updateMatrixWorld(true);
 
     let bounds = new THREE.Box3().setFromObject(model);
@@ -423,6 +424,14 @@ function createShipwreck(scene, opts = {}) {
       if (!obj.isMesh) return;
       obj.castShadow = true;
       obj.receiveShadow = true;
+      // Algunos naufragios descargados incluyen una base enorme de arena.
+      // Quitamos solo superficies casi planas y muy anchas para evitar que se superpongan con la playa del juego.
+      const meshBounds = new THREE.Box3().setFromObject(obj);
+      const meshSize = meshBounds.getSize(new THREE.Vector3());
+      if (meshSize.x > 8 && meshSize.z > 8 && meshSize.y < 0.35) {
+        obj.visible = false;
+        console.info('Naufragio: se ocultó la base plana de arena del modelo.');
+      }
     });
 
     group.position.set(x, terrainH(x, z) - (opts.sink ?? 0.18) - bounds.min.y, z);
@@ -577,7 +586,7 @@ function create(scene, renderer, opts = {}) {
     yaw: 0.35,
     tiltRoll: 0.14,
     pitch: -0.04,
-    sink: 1.15,
+    sink: 0.18,
     scale: 1.0,
     walkableMeshes: wreckWalkableMeshes,
     colliders,
