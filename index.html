@@ -461,7 +461,7 @@ async function initializeWorld(){
   animalSound: (species,pos,distance) => playAnimalCall(species,pos,distance)
 });
  worldInitialized=true;
- const spawnX=0,spawnZ=beach.shoreZ(0)+9;
+ const spawnX=94,spawnZ=145;
  const spawnY=beach.surfaceHeightAt?beach.surfaceHeightAt(spawnX,spawnZ):beach.heightAt(spawnX,spawnZ);
  player.position.set(spawnX,spawnY+.035,spawnZ);player.rotation.set(0,0,0);yaw=0;pitch=-.12;onGround=true;vy=0;fallMode='none';
  wildlife.populateIsland?.(6);
