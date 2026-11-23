@@ -355,7 +355,7 @@ function updateStoryCinema(time){
  const t=Math.max(0,time-storyCinemaStart);
  const wreckX=12,wreckZ=beach.shoreZ(12)+1.5,wreckY=beach.heightAt(wreckX,wreckZ)+1.4;
  const playerY=player.position.y+1.15;
- let p0,p1,target,duration;
+ const p0=new THREE.Vector3(),p1=new THREE.Vector3(),target=new THREE.Vector3(); let duration;
  if(t<6){
   p0.set(wreckX+22,wreckY+15,wreckZ+27);p1.set(wreckX+12,wreckY+8,wreckZ+15);target.set(wreckX,wreckY,wreckZ);duration=6;
  }else if(t<12){
