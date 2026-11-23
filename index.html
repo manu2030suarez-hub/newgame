@@ -652,7 +652,7 @@ const campfires = [];
 let nearbyCampfire = null, campfireBuilding = null, campfirePlacementMode=false, campfirePreview=null, campfirePreviewValid=false, campfirePlacementClickConsumed=false;
 let rightHandBone=null, heldToolRoot=null, axeTool=null, knifeTool=null, fishingRodModel=null;
 let torchTool=null, torchFlame=null, torchInnerFlame=null, torchLight=null, torchSmoke=[];
-let torchOwned=false, torchLit=false, torchFuel=0, torchFuelMax=150, torchIgnitionActive=false, torchIgnitionT=0;
+let torchOwned=false, torchLit=false, torchFuel=0, torchFuelMax=150, torchIgnitionActive=false, torchIgnitionT=0, torchUiTimer=0;
 let toolAction=null, toolActionT=0, toolImpactDone=false, nearbyPalm=null;
 const palmDamage = new Map(); const harvestedPalms = new Set(); const impactBits=[];
 let buildMode=false, buildRotation=0, buildGhost=null; const builtStructures=[];
@@ -714,7 +714,7 @@ function makeHeldTools(){
   const flameMat=new THREE.MeshStandardMaterial({color:0xff7924,emissive:0xff4a0a,emissiveIntensity:3.4,roughness:.3,transparent:true,opacity:.96,side:THREE.DoubleSide,depthWrite:false});
   torchFlame=new THREE.Mesh(new THREE.ConeGeometry(.072,.32,10,4),flameMat);torchFlame.position.y=.77;torchFlame.rotation.z=-.09;torchTool.add(torchFlame);
   torchInnerFlame=new THREE.Mesh(new THREE.ConeGeometry(.033,.19,8,3),new THREE.MeshBasicMaterial({color:0xffe9a6,transparent:true,opacity:.9,side:THREE.DoubleSide,depthWrite:false}));torchInnerFlame.position.set(0,.71,.008);torchTool.add(torchInnerFlame);
-  torchLight=new THREE.PointLight(0xff9b4b,0,9,2);torchLight.position.y=.77;torchLight.castShadow=!isLowPowerDevice;torchLight.shadow.mapSize.set(512,512);torchLight.shadow.bias=-.002;torchTool.add(torchLight);
+  torchLight=new THREE.PointLight(0xff9b4b,0,9,2);torchLight.position.y=.77;torchLight.castShadow=true;torchLight.shadow.mapSize.set(isLowPowerDevice?256:512,isLowPowerDevice?256:512);torchLight.shadow.bias=-.002;torchTool.add(torchLight);
   for(let i=0;i<5;i++){const puff=new THREE.Mesh(new THREE.SphereGeometry(.022+i*.004,7,6),new THREE.MeshBasicMaterial({color:0x77716a,transparent:true,opacity:0,depthWrite:false}));puff.userData.phase=i*.21;torchTool.add(puff);torchSmoke.push(puff);}
   torchTool.visible=false;
 }
@@ -1820,7 +1820,7 @@ function updateCampfire(dt,time) {
     if(fire===nearbyCampfire && fire.lit)survival.energy=clamp(survival.energy+dt*2.2,0,100);
   }
   const prompt=$('prompt');
-  if(nearbyCampfire){prompt.textContent=nearbyCampfire.soaked?'Fogata empapada':nearbyCampfire.lit?'F · Apagar fogata':'F · Encender fogata';prompt.style.display='block';}
+  if(nearbyCampfire){const canLightTorch=activeTool==='torch'&&!torchLit&&nearbyCampfire.lit&&Math.hypot(nearbyCampfire.x-player.position.x,nearbyCampfire.z-player.position.z)<2.8;prompt.textContent=canLightTorch?'F · Encender antorcha':nearbyCampfire.soaked?'Fogata empapada':nearbyCampfire.lit?'F · Apagar fogata':'F · Encender fogata';prompt.style.display='block';}
 }
 
 function hasTool(k){return k==='fist'?true:k==='rod'?(!!inventory.fishingRod&&!rodDrop):k==='torch'?torchOwned:!!tools[k];}
@@ -2078,16 +2078,16 @@ function startTorchIgnition(){
   torchIgnitionActive=true;torchIgnitionT=0;setStatus('Acercás la antorcha a las llamas para prender la resina…');
 }
 function updateTorch(dt){
-  if(torchIgnitionActive){if(rainActive){torchIgnitionActive=false;setStatus('La lluvia no te deja prender la antorcha.');}else{torchIgnitionT+=dt;if(torchIgnitionT>=1.35){torchIgnitionActive=false;torchLit=true;setStatus('¡La resina prendió! La antorcha está encendida.');}}}
+  if(torchIgnitionActive){if(rainActive){torchIgnitionActive=false;setStatus('La lluvia no te deja prender la antorcha.');refreshHotbar();}else{torchIgnitionT+=dt;if(torchIgnitionT>=1.35){torchIgnitionActive=false;torchLit=true;setStatus('¡La resina prendió! La antorcha está encendida.');refreshHotbar();}}}
   if(!torchOwned||!torchLit)return;
-  if(rainActive){torchLit=false;setStatus('La lluvia apagó la antorcha. Volvé a encenderla en una fogata.');return;}
+  if(rainActive){torchLit=false;setStatus('La lluvia apagó la antorcha. Volvé a encenderla en una fogata.');refreshHotbar();return;}
   const ground=beach.heightAt(player.position.x,player.position.z);
-  if(ground<-.12&&torchFlame){torchFlame.updateWorldMatrix(true,false);torchFlame.getWorldPosition(_v);if(_v.y<=.10){torchLit=false;setStatus('¡El agua del mar alcanzó la llama y apagó la antorcha!');return;}}
-  torchFuel=Math.max(0,torchFuel-dt);if(torchFuel<=0){torchLit=false;setStatus('La resina se consumió y la antorcha se apagó definitivamente. Fabrica otra.');}
+  if(ground<-.12&&torchFlame){torchFlame.updateWorldMatrix(true,false);torchFlame.getWorldPosition(_v);if(_v.y<=.10){torchLit=false;setStatus('¡El agua del mar alcanzó la llama y apagó la antorcha!');refreshHotbar();return;}}
+  torchFuel=Math.max(0,torchFuel-dt);torchUiTimer+=dt;if(torchUiTimer>=1){torchUiTimer=0;refreshHotbar();}if(torchFuel<=0){torchLit=false;setStatus('La resina se consumió y la antorcha se apagó definitivamente. Fabrica otra.');refreshHotbar();}
 }
 function applyTorchIgnitionPose(time){
   if(!torchIgnitionActive||!B.uarmR||!B.farmR)return;const t=clamp(torchIgnitionT/1.35,0,1);const reach=smooth(clamp(t/.32,0,1))*(1-smooth(clamp((t-.70)/.30,0,1)));
-  _f.set(Math.sin(player.rotation.y),0,Math.cos(player.rotation.y));_sideV.crossVectors(worldUp,_f);const upper=new THREE.Vector3(0,-.72,0).addScaledVector(_f,.82).addScaledVector(_sideV,-.10).normalize();const fore=new THREE.Vector3(0,.12,0).addScaledVector(_f,1).addScaledVector(_sideV,.04).normalize();aimBone(B.uarmR,B.farmR,upper,reach);aimBone(B.farmR,B.handR,fore,reach);
+  const fire=campfires.find(f=>f.lit&&Math.hypot(f.x-player.position.x,f.z-player.position.z)<2.8);if(fire)_f.set(fire.x-player.position.x,0,fire.z-player.position.z).normalize();else _f.set(Math.sin(player.rotation.y),0,Math.cos(player.rotation.y));_sideV.crossVectors(worldUp,_f);const upper=new THREE.Vector3(0,-.72,0).addScaledVector(_f,.82).addScaledVector(_sideV,-.10).normalize();const fore=new THREE.Vector3(0,.12,0).addScaledVector(_f,1).addScaledVector(_sideV,.04).normalize();aimBone(B.uarmR,B.farmR,upper,reach);aimBone(B.farmR,B.handR,fore,reach);
 }
 function craftFishingRod() {
   if (inventory.fishingRod) {
@@ -3396,7 +3396,7 @@ document.addEventListener('keydown', e => {
   if (e.code === 'KeyJ') dropRawMeat();
   if (e.code === 'KeyM') { backpackHoldAt=performance.now(); backpackWasLong=false; setTimeout(()=>{if(keys.KeyM){backpackWasLong=true;setBackpackVisible($('inventory').classList.contains('inventory-hidden'));}},320); }
   if (e.code === 'KeyB') toggleCraftPanel();
-  if (e.code === 'KeyF') {if(activeTool==='torch'&&!torchLit)startTorchIgnition();else toggleFire();}
+  if (e.code === 'KeyF') {if(activeTool==='torch'){if(!torchLit)startTorchIgnition();else setStatus('La antorcha ya está encendida.');}else toggleFire();}
   if (e.code === 'KeyX') useTool();
   if (e.code === 'Digit1') selectTool('axe');
   if (e.code === 'Digit2') selectTool('knife');
