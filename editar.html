@@ -92,6 +92,7 @@ input[type=range]{width:100%;accent-color:#91c69a}.sliderline{display:grid;grid-
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { FishModel } from './fish-model.js';
 const $=id=>document.getElementById(id);
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x18241c);
 const camera=new THREE.PerspectiveCamera(38,1,.01,100);camera.position.set(2.7,1.65,4.4);
@@ -348,8 +349,9 @@ function buildHandProp(){
  clearHandProp();
  const side=$('handSide').value,sideRe=sidePattern(side),type=$('handObject').value;
  const handBone=findRig(/hand/i,side,/(thumb|index|middle|ring|pinky|finger|twist|ik|end)/i)||findRig(/wrist/i,side)||findRig(/forearm|lowerarm/i,side)||findRig(/arm$/i,side);
- if(['stone','branch','coconut'].includes(type)){
-  handProp=createPreviewThrowableMesh(type==='coconut'?'coconut':type);handPropBone=handBone;scene.add(handProp);
+ if(['stone','branch','coconut','openCoconut','bowl','fish','cookedFish'].includes(type)){
+  handProp=type==='openCoconut'?createPreviewOpenCoconut():type==='bowl'?createPreviewStoneBowl():type==='fish'||type==='cookedFish'?FishModel.create({length:.65}).root:createPreviewThrowableMesh(type);
+  if(type==='cookedFish'){const cooked=FishModel.create({length:.65});cooked.setTint(1);handProp=cooked.root;}handPropBone=handBone;scene.add(handProp);
   if(handBone){syncHandProp();const hw=handBone.getWorldPosition(new THREE.Vector3());controls.target.set(hw.x*.55,hw.y*.55+.25,0);camera.position.set(hw.x+1.9,hw.y+.65,3.7);controls.update();}
   else{handPropBone=null;handProp.position.set(side==='R'?.34:-.34,1.02,.24);controls.target.set(0,1,0);camera.position.set(2.9,1.7,4.5);controls.update();}
   return;
