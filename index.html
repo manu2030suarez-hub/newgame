@@ -1038,9 +1038,16 @@ function updateHeldThrowableMeshes() {
       _ax.copy(_fd).multiplyScalar(.5).addScaledVector(_AY, .85).normalize();
       if (aimBlend > .01 || (throwAnim && throwAnim.slot === slot)) _ax.lerp(curAimDir, throwAnim && throwAnim.slot === slot ? 1 : aimBlend).normalize();
       mesh.position.copy(_wr).addScaledVector(_ax, spec.len * .5 - .14);
-      mesh.quaternion.setFromUnitVectors(_AZ, _ax);
     } else {
       mesh.position.copy(_wr).addScaledVector(_AY, spec.r * .35);
+    }
+    const handBone=B['hand'+slot],record=savedHandPoses[`${rec.type}_${slot}`],transform=record?.prop;
+    if(handBone){
+      const handQ=handBone.getWorldQuaternion(new THREE.Quaternion());
+      const off=transform?.position||{},rot=transform?.rotation||{};
+      mesh.position.add(new THREE.Vector3(off.x||0,off.y||0,off.z||0).applyQuaternion(handQ));
+      mesh.quaternion.copy(handQ).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(rot.x||0),THREE.MathUtils.degToRad(rot.y||0),THREE.MathUtils.degToRad(rot.z||0),'XYZ')));
+      mesh.scale.setScalar(transform?.scale||1);
     }
   }
 }
