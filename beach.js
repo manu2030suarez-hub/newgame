@@ -637,6 +637,13 @@ function create(scene, renderer, opts = {}) {
   const rockSideRaycaster = new THREE.Raycaster();
   const rockMoveOrigin = new THREE.Vector3(), rockMoveDir = new THREE.Vector3();
   const harvestPalms = [];
+  const terrainUp = new THREE.Vector3(0, 1, 0);
+  function terrainNormalAt(x, z) {
+    const e = .32;
+    const dx = (terrainH(x + e, z) - terrainH(x - e, z)) / (2 * e);
+    const dz = (terrainH(x, z + e) - terrainH(x, z - e)) / (2 * e);
+    return new THREE.Vector3(-dx, 1, -dz).normalize();
+  }
 
   const rockGeo = new THREE.DodecahedronGeometry(1, 2);
   const rockPos = rockGeo.attributes.position;
@@ -680,25 +687,8 @@ function create(scene, renderer, opts = {}) {
     }
   }
 
-  const mountainRockRand = mulberry32(4217);
-  for (let i = 0; i < 245; i++) {
-    const a = mountainRockRand() * Math.PI * 2;
-    const rad = 15 + mountainRockRand() * 55;
-    const x = 76 + Math.cos(a) * rad;
-    const z = 82 + Math.sin(a) * rad * 1.08;
-    if (Math.hypot((x - 76) / 58, (z - 82) / 66) > 1.10) continue;
-    const y = terrainH(x, z);
-    const sx = .28 + mountainRockRand() * .72;
-    const sy = .22 + mountainRockRand() * .48;
-    const sz = .30 + mountainRockRand() * .78;
-    const rock = new THREE.Mesh(rockGeo, rockMat);
-    rock.position.set(x, y - sy * .18, z);
-    rock.scale.set(sx, sy, sz);
-    rock.rotation.set((mountainRockRand() - .5) * .42, mountainRockRand() * Math.PI * 2, (mountainRockRand() - .5) * .38);
-    rock.castShadow = true; rock.receiveShadow = true;
-    scene.add(rock); rock.updateMatrixWorld(true); rockMeshes.push(rock);
-    if (Math.max(sx, sz) > .72) colliders.push({ x, z, r: Math.max(.32, Math.min(sx, sz) * .58), rx: sx * .72, rz: sz * .72, rock: true, bottom: rock.position.y - sy, top: rock.position.y + sy, mesh: rock });
-  }
+  // Se eliminaron las piedras decorativas de la montaña: las laderas quedan limpias.
+
 
   const NV = 4, variants = [];
   for (let v = 0; v < NV; v++) variants.push(buildPalm(101 + v * 17));
@@ -707,7 +697,7 @@ function create(scene, renderer, opts = {}) {
   const TOTAL = 44;
   for (let tries = 0; placed.length < TOTAL && tries < 4000; tries++) {
     const x = (rnd() - .5) * 280;
-    const d = 5 + Math.pow(rnd(), 1.6) * 42;
+    const d = 4.5 + Math.pow(rnd(), 1.8) * 30;
     const z = shoreZ(x) + d;
     if (Math.hypot(x, z) < 5) continue;
     if (Math.hypot(x - CAVE_DEFAULT_X, z - (shoreZ(CAVE_DEFAULT_X) + 2.2)) < 26) continue;
@@ -725,7 +715,7 @@ function create(scene, renderer, opts = {}) {
     const tm = new THREE.InstancedMesh(variants[v].trunkGeo, trunkMat, list.length);
     const fm = new THREE.InstancedMesh(variants[v].frondGeo, frondMat, list.length);
     list.forEach((p, i) => {
-      q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), p.rot); ps.set(p.x, p.y, p.z); sc.setScalar(p.s);
+      q.setFromUnitVectors(terrainUp, terrainNormalAt(p.x, p.z)); q.multiply(new THREE.Quaternion().setFromAxisAngle(terrainUp, p.rot)); ps.set(p.x, p.y, p.z); sc.setScalar(p.s);
       m4.compose(ps, q, sc); tm.setMatrixAt(i, m4); fm.setMatrixAt(i, m4);
       for (let k = 0; k < 4; k++) {
         const a = k / 4 * Math.PI * 2 + p.rot;
@@ -762,7 +752,7 @@ function create(scene, renderer, opts = {}) {
   };
   const grassList = [], grnd = mulberry32(555);
   for (let tries = 0; grassList.length < 900 && tries < 6000; tries++) {
-    const x = (grnd() - .5) * 300, d = 12 + grnd() * 110, z = shoreZ(x) + d;
+    const x = (grnd() - .5) * 300, d = 5 + grnd() * 30, z = shoreZ(x) + d;
     const mountainClear = ss(104, 132, Math.hypot(x - 76, z - 82));
     const p = ss(12, 40, d) * (.35 + .65 * fbm2(x * .05, z * .05)) * mountainClear;
     if (grnd() > p) continue;
@@ -770,7 +760,7 @@ function create(scene, renderer, opts = {}) {
   }
   const grass = new THREE.InstancedMesh(gg, grassMat, grassList.length);
   grassList.forEach((p, i) => {
-    q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), p.r); ps.set(p.x, terrainH(p.x, p.z) - .02, p.z); sc.set(p.s, p.s, p.s);
+    q.setFromUnitVectors(terrainUp, terrainNormalAt(p.x, p.z)); q.multiply(new THREE.Quaternion().setFromAxisAngle(terrainUp, p.r)); ps.set(p.x, terrainH(p.x, p.z) - .02, p.z); sc.set(p.s, p.s, p.s);
     m4.compose(ps, q, sc); grass.setMatrixAt(i, m4);
   });
   grass.frustumCulled = false;
@@ -895,7 +885,10 @@ function create(scene, renderer, opts = {}) {
       const targetHeight = minHeight + rand() * (maxHeight - minHeight);
       const scale = targetHeight / sourceHeight;
       plant.scale.setScalar(scale);
-      plant.rotation.y = rand() * Math.PI * 2;
+      const plantYaw = rand() * Math.PI * 2;
+      const plantNormal = terrainNormalAt(x, z);
+      plant.quaternion.setFromUnitVectors(terrainUp, plantNormal);
+      plant.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(terrainUp, plantYaw));
       plant.updateMatrixWorld(true);
       const bounds = new THREE.Box3().setFromObject(plant);
       plant.position.set(x, terrainH(x, z) - bounds.min.y, z);
