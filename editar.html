@@ -311,10 +311,37 @@ function createThrowableMesh(type) {
   return g;
 }
 function createPreviewThrowableMesh(type){
+ // Mismas geometrías, materiales, escalas y variación que createThrowableMesh() del juego.
  const g=new THREE.Group();
- if(type==='stone'){const m=new THREE.Mesh(previewTM.stoneGeo,previewTM.stoneMat);m.scale.set(1.15,.8,.95);m.castShadow=true;g.add(m);}
- else if(type==='branch'){const mat=previewTM.branchMat.clone();g.userData.mat=mat;const m=new THREE.Mesh(previewTM.stickGeo,mat);m.castShadow=true;g.add(m);const tg=new THREE.Group();tg.position.set(0,.01,.06);tg.rotation.y=.75;tg.add(new THREE.Mesh(previewTM.twigGeo,mat));g.add(tg);}
- else{const m=new THREE.Mesh(previewTM.nutGeo,previewTM.nutMat);m.scale.set(1,.9,1);m.castShadow=true;g.add(m);const h=new THREE.Mesh(previewTM.huskGeo,previewTM.huskMat);h.scale.set(.55,.32,.55);h.position.y=.085;g.add(h);}
+ if(type==='stone'){
+  const m=new THREE.Mesh(previewTM.stoneGeo,previewTM.stoneMat);
+  m.scale.set(1.15+Math.random()*.15,.74+Math.random()*.12,.9+Math.random()*.12);
+  m.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);m.castShadow=true;g.add(m);
+ }else if(type==='branch){
+  const mat=previewTM.branchMat.clone();g.userData.mat=mat;
+  const m=new THREE.Mesh(previewTM.stickGeo,mat);m.castShadow=true;g.add(m);
+  const twig=new THREE.Group();twig.position.set(0,.01,.06);twig.rotation.y=.75;twig.add(new THREE.Mesh(previewTM.twigGeo,mat));g.add(twig);
+ }else{
+  const m=new THREE.Mesh(previewTM.nutGeo,previewTM.nutMat);m.scale.set(1,.9,1);m.castShadow=true;g.add(m);
+  const h=new THREE.Mesh(previewTM.huskGeo,previewTM.huskMat);h.scale.set(.55,.32,.55);h.position.y=.085;g.add(h);
+ }
+ return g;
+}
+function createPreviewOpenCoconut(){
+ // Copia exacta de createOpenCoconutHandMesh() del juego.
+ const g=new THREE.Group();
+ const shell=new THREE.Mesh(new THREE.SphereGeometry(.115,16,10,0,Math.PI*2,0,Math.PI*.58),new THREE.MeshStandardMaterial({color:0x65402a,roughness:.92}));
+ shell.rotation.x=Math.PI;g.add(shell);
+ const flesh=new THREE.Mesh(new THREE.CircleGeometry(.083,18),new THREE.MeshStandardMaterial({color:0xf0e5c9,roughness:.8,side:THREE.DoubleSide}));
+ flesh.position.y=.045;flesh.rotation.x=-Math.PI/2;g.add(flesh);
+ return g;
+}
+function createPreviewStoneBowl(){
+ // Geometría idéntica a makeStoneBowl() del juego, sin contenido variable.
+ const g=new THREE.Group(),mat=new THREE.MeshStandardMaterial({color:0x77766f,roughness:.98,flatShading:true});
+ const profile=[new THREE.Vector2(.025,0),new THREE.Vector2(.11,.018),new THREE.Vector2(.17,.065),new THREE.Vector2(.205,.145),new THREE.Vector2(.195,.19),new THREE.Vector2(.16,.17),new THREE.Vector2(.145,.11),new THREE.Vector2(.10,.065),new THREE.Vector2(.025,.06)];
+ const bowl=new THREE.Mesh(new THREE.LatheGeometry(profile,16),mat);bowl.castShadow=true;bowl.receiveShadow=true;g.add(bowl);
+ const rim=new THREE.Mesh(new THREE.TorusGeometry(.185,.018,7,20),mat);rim.rotation.x=Math.PI/2;rim.position.y=.18;g.add(rim);
  return g;
 }
 function buildHandProp(){
@@ -384,7 +411,7 @@ $('handSide').onchange=loadPose;$('handObject').onchange=loadPose;$('handBoneSel
 sliders($('handSliders'),$('handBoneSelect'));
 $('loadHandPose').onclick=loadPose;
 $('savePose').onclick=()=>{const key=$('handObject').value+'_'+$('handSide').value;handPoses[key]={bones:snapshot(),prop:JSON.parse(JSON.stringify(propTransform))};localStorage.setItem(poseStoreKey,JSON.stringify(handPoses));status('Pose y ajuste del objeto '+key+' guardados en este navegador.')};
-$('resetPose').onclick=()=>{applyDefaultGrip($('handSide').value);const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b);syncHandProp();status('Agarre base del juego restablecido.')};
+$('resetPose').onclick=()=>{applyDefaultGrip($('handSide').value);propTransform=JSON.parse(JSON.stringify(defaultPropTransform));renderPropTransformControls();const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b);syncHandProp();status('Agarre y transformación del objeto restablecidos para esta mano.')};
 $('downloadPose').onclick=()=>download('survival-playa-poses-manos.json',JSON.stringify(handPoses,null,2));
 function switchMode(next){mode=next;$('tabAnim').classList.toggle('active',next==='anim');$('tabHands').classList.toggle('active',next==='hands');$('animListPane').classList.toggle('hidden',next!=='anim');$('handListPane').classList.toggle('hidden',next!=='hands');$('animControls').classList.toggle('hidden',next!=='anim');$('handControls').classList.toggle('hidden',next!=='hands');$('animToolbar').classList.toggle('hidden',next!=='anim');$('handToolbar').classList.toggle('hidden',next!=='hands');if(next==='hands')loadPose();else if(selectedClip)selectClip(selectedClip)}
 $('tabAnim').onclick=()=>switchMode('anim');$('tabHands').onclick=()=>switchMode('hands');
