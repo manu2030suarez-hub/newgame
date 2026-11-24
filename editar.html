@@ -345,13 +345,22 @@ function createPreviewStoneBowl(){
  const rim=new THREE.Mesh(new THREE.TorusGeometry(.185,.018,7,20),mat);rim.rotation.x=Math.PI/2;rim.position.y=.18;g.add(rim);
  return g;
 }
+function createPreviewFish(cooked=false){
+ const fish=FishModel.create({length:.65});
+ if(cooked)fish.setTint(1);
+ return fish.root;
+}
+function handPoseKey(){
+ const type=$('handObject').value,side=$('handSide').value;
+ const gameType=type==='openCoconut'?'coconut':type==='cookedFish'?'fish':type;
+ return gameType+'_'+side;
+}
 function buildHandProp(){
  clearHandProp();
  const side=$('handSide').value,sideRe=sidePattern(side),type=$('handObject').value;
  const handBone=findRig(/hand/i,side,/(thumb|index|middle|ring|pinky|finger|twist|ik|end)/i)||findRig(/wrist/i,side)||findRig(/forearm|lowerarm/i,side)||findRig(/arm$/i,side);
  if(['stone','branch','coconut','openCoconut','bowl','fish','cookedFish'].includes(type)){
-  handProp=type==='openCoconut'?createPreviewOpenCoconut():type==='bowl'?createPreviewStoneBowl():type==='fish'||type==='cookedFish'?FishModel.create({length:.65}).root:createPreviewThrowableMesh(type);
-  if(type==='cookedFish'){const cooked=FishModel.create({length:.65});cooked.setTint(1);handProp=cooked.root;}handPropBone=handBone;scene.add(handProp);
+  handProp=type==='openCoconut'?createPreviewOpenCoconut():type==='bowl'?createPreviewStoneBowl():type==='fish'||type==='cookedFish'?createPreviewFish(type==='cookedFish'):createPreviewThrowableMesh(type);handPropBone=handBone;scene.add(handProp);
   if(handBone){syncHandProp();const hw=handBone.getWorldPosition(new THREE.Vector3());controls.target.set(hw.x*.55,hw.y*.55+.25,0);camera.position.set(hw.x+1.9,hw.y+.65,3.7);controls.update();}
   else{handPropBone=null;handProp.position.set(side==='R'?.34:-.34,1.02,.24);controls.target.set(0,1,0);camera.position.set(2.9,1.7,4.5);controls.update();}
   return;
@@ -396,7 +405,7 @@ function buildHandProp(){
 function loadPose(){
  const type=$('handObject').value;
  if(['axe','knife','rod','torch'].includes(type)&&$('handSide').value!=='R'){$('handSide').value='R';status('En el juego esta herramienta se equipa en la mano derecha; cambié la selección a esa mano.');}
- const key=$('handObject').value+'_'+$('handSide').value,data=handPoses[key],boneData=data?.bones||data;
+ const key=handPoseKey(),data=handPoses[key],boneData=data?.bones||data;
  if(data){setRest();applySnapshot(boneData);propTransform={...JSON.parse(JSON.stringify(defaultPropTransform)),...(data.prop||{}),position:{...defaultPropTransform.position,...(data.prop?.position||{})},rotation:{...defaultPropTransform.rotation,...(data.prop?.rotation||{})}}}else{applyDefaultGrip($('handSide').value);propTransform=JSON.parse(JSON.stringify(defaultPropTransform))}
  const opts=selectedHandBones();$('handBoneSelect').innerHTML='';
  opts.forEach(b=>{const o=document.createElement('option');o.value=b.name;o.textContent=boneLabel(b);$('handBoneSelect').appendChild(o)});
@@ -412,7 +421,7 @@ $('resetPropTransform').onclick=()=>{propTransform=JSON.parse(JSON.stringify(def
 $('handSide').onchange=loadPose;$('handObject').onchange=loadPose;$('handBoneSelect').onchange=()=>{const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b)};
 sliders($('handSliders'),$('handBoneSelect'));
 $('loadHandPose').onclick=loadPose;
-$('savePose').onclick=()=>{const key=$('handObject').value+'_'+$('handSide').value;handPoses[key]={bones:snapshot(),prop:JSON.parse(JSON.stringify(propTransform))};localStorage.setItem(poseStoreKey,JSON.stringify(handPoses));status('Pose y ajuste del objeto '+key+' guardados en este navegador.')};
+$('savePose').onclick=()=>{const key=handPoseKey();handPoses[key]={bones:snapshot(),prop:JSON.parse(JSON.stringify(propTransform))};localStorage.setItem(poseStoreKey,JSON.stringify(handPoses));status('Pose y ajuste del objeto '+key+' guardados en este navegador.')};
 $('resetPose').onclick=()=>{applyDefaultGrip($('handSide').value);propTransform=JSON.parse(JSON.stringify(defaultPropTransform));renderPropTransformControls();const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b);syncHandProp();status('Agarre y transformación del objeto restablecidos para esta mano.')};
 $('downloadPose').onclick=()=>download('survival-playa-poses-manos.json',JSON.stringify(handPoses,null,2));
 function switchMode(next){mode=next;$('tabAnim').classList.toggle('active',next==='anim');$('tabHands').classList.toggle('active',next==='hands');$('animListPane').classList.toggle('hidden',next!=='anim');$('handListPane').classList.toggle('hidden',next!=='hands');$('animControls').classList.toggle('hidden',next!=='anim');$('handControls').classList.toggle('hidden',next!=='hands');$('animToolbar').classList.toggle('hidden',next!=='anim');$('handToolbar').classList.toggle('hidden',next!=='hands');if(next==='hands')loadPose();else if(selectedClip)selectClip(selectedClip)}
