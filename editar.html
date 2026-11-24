@@ -53,7 +53,7 @@ input[type=range]{width:100%;accent-color:#91c69a}.sliderline{display:grid;grid-
 <section class="panel center">
  <div id="viewport"><div id="load">Preparando modelo 3D…</div></div>
  <div class="toolbar" id="animToolbar">
-  <button id="editStart" class="primary">✎ Iniciar edición</button><button id="play">▶ Reproducir</button><button id="stop">■ Detener</button><button id="addKey">＋ Añadir clave</button><button id="saveAnim" class="primary">Guardar animación</button>
+  <button id="editStart" class="primary">✎ Iniciar edición</button><button id="play">▶ Reproducir</button><button id="stop">■ Detener</button><button id="addKey">＋ Guardar fotograma</button><button id="makeGrid">Crear fotogramas cada 0.1 s</button><button id="saveAnim" class="primary">Guardar animación</button>
  </div>
  <div class="toolbar hidden" id="handToolbar">
   <button id="savePose" class="primary">Guardar pose de esta mano</button><button id="resetPose">Restablecer pose</button>
@@ -67,10 +67,10 @@ input[type=range]{width:100%;accent-color:#91c69a}.sliderline{display:grid;grid-
   <label>Hueso del cuerpo</label><select id="boneSelect"></select>
   <div id="boneSliders"></div>
   <h3>Línea de tiempo</h3>
-  <div class="row"><div><label>Tiempo (segundos)</label><input id="timeValue" type="number" min="0" max="10" step=".05" value="0"></div><div><label>Duración</label><input id="duration" type="number" min=".1" max="20" step=".1" value="1"></div></div>
+  <div class="row"><div><label>Tiempo (segundos)</label><input id="timeValue" type="number" min="0" max="10" step=".1" value="0"></div><div><label>Duración</label><input id="duration" type="number" min=".1" max="20" step=".1" value="1"></div></div>
   <input id="timeline" type="range" min="0" max="1" step=".01" value="0">
   <div class="keyframes" id="keyframes"></div>
-  <p class="hint">Cada clave guarda la pose completa del esqueleto en ese instante. Para un movimiento fluido, agregá varias claves en distintos tiempos.</p>
+  <p class="hint">Cada fotograma guarda la pose completa. Usá pasos de 0.1 s (0.0, 0.1, 0.2…) y modificá el personaje en cada instante antes de guardar el fotograma.</p>
   <button id="downloadAnim" style="width:100%">Exportar animación .json</button>
  </div>
  <div id="handControls" class="hidden">
@@ -117,6 +117,21 @@ function syncSliders(container,bone){const e=new THREE.Euler().setFromQuaternion
 function snapshot(){const snap={};for(const b of bones)snap[b.name]=b.quaternion.toArray();return snap}
 function applySnapshot(s){for(const [name,q] of Object.entries(s||{})){const b=boneByName.get(name);if(b&&q?.length===4)b.quaternion.fromArray(q)}}
 function resetToFrame(t){if(!frames.length)return;let a=frames[0],b=frames[frames.length-1];for(let i=0;i<frames.length-1;i++){if(t>=frames[i].t&&t<=frames[i+1].t){a=frames[i];b=frames[i+1];break}}const span=Math.max(.0001,b.t-a.t),u=THREE.MathUtils.clamp((t-a.t)/span,0,1);for(const bone of bones){const qa=a.pose[bone.name],qb=b.pose[bone.name];if(!qa||!qb)continue;const q=new THREE.Quaternion().fromArray(qa).slerp(new THREE.Quaternion().fromArray(qb),u);bone.quaternion.copy(q)}if(character){const ra=a.root||{rotation:[0,0,0],y:characterRestY},rb=b.root||ra;character.rotation.set(...ra.rotation.map((v,i)=>THREE.MathUtils.lerp(v,rb.rotation[i]??v,u)));character.position.y=THREE.MathUtils.lerp(ra.y??characterRestY,rb.y??characterRestY,u)}}
+function createFrameGrid(){
+ if(!selectedClip){status('Elegí una animación primero.');return;}
+ stopPreview();
+ if(selectedClip.preset&&!frames.length)createGameFrames(selectedClip.preset);
+ const step=.1,total=Math.max(.1,duration),count=Math.round(total/step);
+ const source=frames.map(f=>({t:f.t,pose:JSON.parse(JSON.stringify(f.pose)),root:f.root?JSON.parse(JSON.stringify(f.root)):null}));
+ const generated=[];
+ for(let n=0;n<=count;n++){
+  const t=Math.min(total,Number((n*step).toFixed(1)));
+  if(source.length){resetToFrame(t);generated.push({t,pose:snapshot(),root:{rotation:character.rotation.toArray().slice(0,3),y:character.position.y}});}
+  else if(mixer){const action=mixer.clipAction(selectedClip);mixer.stopAllAction();action.reset();action.play();action.paused=true;action.time=Math.min(t,selectedClip.duration);mixer.update(0);generated.push({t,pose:snapshot(),root:{rotation:[0,0,0],y:characterRestY}});}
+ }
+ if(generated.length){frames=generated;renderFrames();resetToFrame(0);$('timeline').value=0;$('timeValue').value=0;status('Se crearon '+frames.length+' fotogramas separados por 0.1 segundos. Seleccioná uno, modificá la pose y guardalo.');}
+ else status('No se pudo generar la secuencia de fotogramas.');
+}
 function makeFrame(t){const pose=snapshot();const old=frames.findIndex(f=>Math.abs(f.t-t)<.001);if(old>=0)frames[old]={t,pose};else frames.push({t,pose});frames.sort((a,b)=>a.t-b.t);renderFrames();status('Clave guardada en '+t.toFixed(2)+' s.')}
 function renderFrames(){$('keyframes').innerHTML='';frames.forEach((f,i)=>{const b=document.createElement('button');b.textContent='◆ '+f.t.toFixed(2)+' s';b.onclick=()=>{playing=false;resetToFrame(f.t);$('timeline').value=f.t;$('timeValue').value=f.t;syncSliders($('boneSliders'),boneByName.get($('boneSelect').value));};$('keyframes').appendChild(b)})}
 function clipFromFrames(){const tracks=[];for(const bone of bones){const vals=frames.filter(f=>f.pose[bone.name]);if(vals.length<2)continue;const times=vals.map(f=>f.t),values=vals.flatMap(f=>f.pose[bone.name]);tracks.push(new THREE.QuaternionKeyframeTrack(bone.name+'.quaternion',times,values))}return new THREE.AnimationClip($('clipName').value||'custom',Math.max(.1,duration),tracks)}
@@ -172,10 +187,10 @@ function loadSavedAnimation(){const saved=animationEdits[selectedClip?.name];if(
 $('boneSelect').addEventListener('change',()=>{const b=boneByName.get($('boneSelect').value);if(b)syncSliders($('boneSliders'),b)});
 sliders($('boneSliders'),$('boneSelect'));
 $('editStart').onclick=startEditing;$('play').onclick=()=>{if(playing){playing=false;status('Reproducción pausada.');return}if(frames.length>1)playEdited();else playOriginal()};$('stop').onclick=stopPreview;
-$('addKey').onclick=()=>{const t=Number($('timeValue').value);makeFrame(t)};
+$('addKey').onclick=()=>{const t=Number((Math.round(Number($('timeValue').value)*10)/10).toFixed(1));$('timeValue').value=t;$('timeline').value=t;makeFrame(t)};$('makeGrid').onclick=createFrameGrid;
 $('duration').onchange=()=>{duration=Math.max(.1,Number($('duration').value)||1);$('timeline').max=duration;$('timeValue').max=duration};
-$('timeline').oninput=()=>{const t=Number($('timeline').value);$('timeValue').value=t;if(frames.length)resetToFrame(t);else if(selectedClip&&mixer){stopPreview();const a=mixer.clipAction(selectedClip);a.play();a.paused=true;a.time=t;a.getMixer().update(0)}const b=boneByName.get($('boneSelect').value);if(b)syncSliders($('boneSliders'),b)};
-$('timeValue').onchange=()=>{$('timeline').value=$('timeValue').value;$('timeline').dispatchEvent(new Event('input'))};
+$('timeline').oninput=()=>{const t=Number((Math.round(Number($('timeline').value)*10)/10).toFixed(1));$('timeValue').value=t;if(frames.length)resetToFrame(t);else if(selectedClip&&mixer){stopPreview();const a=mixer.clipAction(selectedClip);a.play();a.paused=true;a.time=t;a.getMixer().update(0)}const b=boneByName.get($('boneSelect').value);if(b)syncSliders($('boneSliders'),b)};
+$('timeValue').onchange=()=>{$('timeValue').value=(Math.round(Number($('timeValue').value)*10)/10).toFixed(1);$('timeline').value=$('timeValue').value;$('timeline').dispatchEvent(new Event('input'))};
 $('saveAnim').onclick=saveAnimation;$('downloadAnim').onclick=()=>download('survival-playa-animaciones.json',JSON.stringify(animationEdits,null,2));
 function selectedHandBones(){
  const side=$('handSide').value,sideRe=sidePattern(side);
