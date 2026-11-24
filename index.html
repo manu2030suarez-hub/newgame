@@ -511,6 +511,15 @@ loader.load(MODEL_PATH, gltf => {
   // Animaciones del archivo (walk / run)
   mixer = new THREE.AnimationMixer(character);
   for (const clip of gltf.animations || []) actions[clip.name.toLowerCase()] = mixer.clipAction(clip);
+  // Carga las animaciones editadas desde la página editar.html (mismo origen/navegador).
+  try {
+    const savedAnimationEdits = JSON.parse(localStorage.getItem('survivalPlaya.animationEdits.v1') || '{}');
+    for (const edit of Object.values(savedAnimationEdits)) {
+      if (!edit?.clip?.tracks?.length) continue;
+      try { const customClip = THREE.AnimationClip.parse(edit.clip); actions[customClip.name.toLowerCase()] = mixer.clipAction(customClip); }
+      catch (clipError) { console.warn('No se pudo cargar una animación editada:', clipError); }
+    }
+  } catch (storageError) { console.warn('No se pudieron leer las animaciones guardadas:', storageError); }
   walkClip = actions.walk ? 'walk' : null; runClip = actions.run ? 'run' : null;
 
   // Huesos para el salto procedural
