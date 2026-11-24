@@ -745,6 +745,17 @@ function updateHeldTool(dt=0){
     if(activeTool==='axe')axeTool.rotation.x+=swing;else knifeTool.rotation.x+=swing;
     if(t>=1){toolAction=null;toolActionT=0;toolImpactDone=false;}
   }
+  // Transformación guardada desde el editor: se aplica al grupo REAL del objeto, no a una copia.
+  const savedToolPose = savedHandPoses[`${activeTool}_R`];
+  const savedToolTransform = savedToolPose?.prop;
+  if(savedToolTransform && heldToolRoot){
+    const off=savedToolTransform.position||{};
+    const rot=savedToolTransform.rotation||{};
+    const baseQ=rightHandBone.getWorldQuaternion(new THREE.Quaternion());
+    heldToolRoot.position.add(new THREE.Vector3(off.x||0,off.y||0,off.z||0).applyQuaternion(baseQ));
+    heldToolRoot.quaternion.copy(baseQ).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(rot.x||0),THREE.MathUtils.degToRad(rot.y||0),THREE.MathUtils.degToRad(rot.z||0),'XYZ')));
+    heldToolRoot.scale.setScalar(savedToolTransform.scale||1);
+  } else if(heldToolRoot) heldToolRoot.scale.setScalar(1);
 }
 
 // ---------- V29: lanzamiento de objetos (rehecho desde cero) ----------
@@ -3815,7 +3826,9 @@ function update(dt, time) {
   const rightGripKey = activeTool !== 'fist' ? activeTool : (hands.R?.kind === 'gull' ? 'fish' : hands.R?.kind || heldThrowables.R?.type || (heldOpenCoconutSlot === 'R' ? 'coconut' : ''));
   const leftGripKey = hands.L?.kind === 'gull' ? 'fish' : (hands.L?.kind || heldThrowables.L?.type || (heldOpenCoconutSlot === 'L' ? 'coconut' : ''));
   for (const [side, key] of [['R', rightGripKey], ['L', leftGripKey]]) {
-    const gripPose = key ? savedHandPoses[`${key}_${side}`] : null, sideTest = side === 'R' ? RIGHT : LEFT;
+    const gripRecord = key ? savedHandPoses[`${key}_${side}`] : null;
+    const gripPose = gripRecord?.bones || gripRecord;
+    const sideTest = side === 'R' ? RIGHT : LEFT;
     if (!gripPose) continue;
     for (const bone of bones) {
       if (!sideTest.test(bone.name) || !/(arm|forearm|hand|thumb|index|middle|ring|pinky|finger)/i.test(bone.name)) continue;
