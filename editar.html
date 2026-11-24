@@ -169,57 +169,96 @@ $('duration').onchange=()=>{duration=Math.max(.1,Number($('duration').value)||1)
 $('timeline').oninput=()=>{const t=Number($('timeline').value);$('timeValue').value=t;if(frames.length)resetToFrame(t);else if(selectedClip&&mixer){stopPreview();const a=mixer.clipAction(selectedClip);a.play();a.paused=true;a.time=t;a.getMixer().update(0)}const b=boneByName.get($('boneSelect').value);if(b)syncSliders($('boneSliders'),b)};
 $('timeValue').onchange=()=>{$('timeline').value=$('timeValue').value;$('timeline').dispatchEvent(new Event('input'))};
 $('saveAnim').onclick=saveAnimation;$('downloadAnim').onclick=()=>download('survival-playa-animaciones.json',JSON.stringify(animationEdits,null,2));
-function selectedHandBones(){const side=$('handSide').value==='R'?/(right|[_.\-:|]r([_.\-:|]|$))/i:/(left|[_.\-:|]l([_.\-:|]|$))/i;return bones.filter(b=>side.test(b.name)&&/(arm|forearm|hand|thumb|index|middle|ring|pinky|finger|wrist)/i.test(b.name))}
-let handProp=null, handPropAnchor=null;
+function selectedHandBones(){
+ const side=$('handSide').value,sideRe=sidePattern(side);
+ return bones.filter(b=>sideRe.test(b.name)&&/(arm|forearm|hand|thumb|index|middle|ring|pinky|finger|wrist)/i.test(b.name));
+}
+let handProp=null,propShowcase=null,handPropBone=null,handPropOffsetQ=new THREE.Quaternion();
 const handPropLoader=new GLTFLoader();
+const showcaseBase=new THREE.Mesh(new THREE.CylinderGeometry(.34,.42,.12,32),new THREE.MeshStandardMaterial({color:0x4b5948,roughness:.9}));
+showcaseBase.position.set(1.35,.035,0);showcaseBase.castShadow=true;showcaseBase.receiveShadow=true;scene.add(showcaseBase);
+const showcaseStem=new THREE.Mesh(new THREE.CylinderGeometry(.035,.05,.48,12),new THREE.MeshStandardMaterial({color:0x59634e,roughness:.85}));
+showcaseStem.position.set(1.35,.31,0);scene.add(showcaseStem);
+function applyDefaultGrip(side){
+ buildRigMap();setRest();
+ const u=B['uarm'+side],fa=B['farm'+side],h=B['hand'+side];
+ const f=new THREE.Vector3(0,0,1),sideV=new THREE.Vector3(1,0,0),sg=side==='L'?1:-1;
+ const upper=new THREE.Vector3(0,-1,0).addScaledVector(f,.46).addScaledVector(sideV,sg*.10).normalize();
+ const fore=new THREE.Vector3(0,.16,0).addScaledVector(f,1).addScaledVector(sideV,-sg*.34).normalize();
+ aimBone(u,fa,upper,1);aimBone(fa,h,fore,1);
+ for(const bone of bones){
+  if(!sidePattern(side).test(bone.name))continue;
+  const n=bone.name;
+  let flex=0;
+  if(/thumb/i.test(n))flex=.48;
+  else if(/index|middle|ring|pinky|finger/i.test(n))flex=.82;
+  if(flex){const q=originalRotations.get(n);if(q){bone.quaternion.fromArray(q);const e=new THREE.Euler().setFromQuaternion(bone.quaternion,'XYZ');e.x+=flex;bone.quaternion.setFromEuler(e)}}
+ }
+}
+function clearHandProp(){
+ if(handProp){scene.remove(handProp);handProp=null}
+ if(propShowcase){scene.remove(propShowcase);propShowcase=null}
+ handPropBone=null;
+}
+function syncHandProp(){
+ if(!handProp||!handPropBone)return;
+ character.updateMatrixWorld(true);
+ const p=handPropBone.getWorldPosition(new THREE.Vector3()),q=handPropBone.getWorldQuaternion(new THREE.Quaternion());
+ const offset=new THREE.Vector3(0,-.015,.075).applyQuaternion(q);
+ handProp.position.copy(p).add(offset);handProp.quaternion.copy(q).multiply(handPropOffsetQ);handProp.scale.setScalar(1);
+}
 function buildHandProp(){
- if(handProp){handProp.parent?.remove(handProp);handProp=null}
- const side=$('handSide').value, sideRe=side==='R'?/(right|[_.\-:|]r([_.\-:|]|$))/i:/(left|[_.\-:|]l([_.\-:|]|$))/i;
- const handBone=bones.find(b=>sideRe.test(b.name)&&/hand/i.test(b.name)&&!/(thumb|index|middle|ring|pinky|finger|twist|ik)/i.test(b.name))
-   || bones.find(b=>sideRe.test(b.name)&&/wrist/i.test(b.name));
- const type=$('handObject').value, prop=new THREE.Group();handProp=prop;handPropAnchor=handBone||character;
- const wood=new THREE.MeshStandardMaterial({color:0x80552f,roughness:.9}),metal=new THREE.MeshStandardMaterial({color:0x9ba5a7,metalness:.55,roughness:.38}),dark=new THREE.MeshStandardMaterial({color:0x33271f,roughness:.95}),green=new THREE.MeshStandardMaterial({color:0x65843d,roughness:.85}),skin=new THREE.MeshStandardMaterial({color:0xc18b68,roughness:.8});
+ clearHandProp();
+ const side=$('handSide').value,sideRe=sidePattern(side),type=$('handObject').value;
+ const handBone=findRig(/hand/i,side,/(thumb|index|middle|ring|pinky|finger|twist|ik|end)/i)||findRig(/wrist/i,side)||findRig(/forearm|lowerarm/i,side)||findRig(/arm$/i,side);
+ const prop=new THREE.Group();handProp=prop;handPropBone=handBone;
+ const wood=new THREE.MeshStandardMaterial({color:0x80552f,roughness:.9}),metal=new THREE.MeshStandardMaterial({color:0x9ba5a7,metalness:.55,roughness:.38}),dark=new THREE.MeshStandardMaterial({color:0x33271f,roughness:.95});
  const add=(geo,mat,pos,scale,rot)=>{const m=new THREE.Mesh(geo,mat);m.position.set(...pos);if(scale)m.scale.set(...scale);if(rot)m.rotation.set(...rot);m.castShadow=true;m.receiveShadow=true;prop.add(m);return m};
  if(type==='axe'){add(new THREE.CylinderGeometry(.018,.026,.58,12),wood,[0,.20,0]);add(new THREE.BoxGeometry(.22,.14,.055),metal,[.075,.47,0]);add(new THREE.BoxGeometry(.025,.13,.07),dark,[-.045,.43,0]);}
  else if(type==='knife'){add(new THREE.CylinderGeometry(.022,.025,.20,12),dark,[0,.07,0]);add(new THREE.BoxGeometry(.045,.24,.018),metal,[0,.28,0]);}
- else if(type==='rod'){add(new THREE.CylinderGeometry(.009,.015,1.05,10),wood,[0,.48,0]);add(new THREE.TorusGeometry(.022,.004,6,12),metal,[0,.22,0],[1,1,1],[0,0,0]);}
+ else if(type==='rod'){add(new THREE.CylinderGeometry(.009,.015,1.05,10),wood,[0,.48,0]);add(new THREE.TorusGeometry(.022,.004,6,12),metal,[0,.22,0]);}
  else if(type==='torch'){add(new THREE.CylinderGeometry(.028,.04,.42,12),wood,[0,.19,0]);add(new THREE.CylinderGeometry(.045,.052,.10,12),dark,[0,.40,0]);add(new THREE.ConeGeometry(.07,.19,12),new THREE.MeshStandardMaterial({color:0xff9b32,emissive:0xff4b08,emissiveIntensity:1.3}),[0,.54,0]);}
  else if(type==='stone'){add(new THREE.DodecahedronGeometry(.14,1),new THREE.MeshStandardMaterial({color:0x858984,roughness:1}),[0,.10,0],[1,.82,1.12]);}
- else if(type==='branch'||type==='wood'){add(new THREE.CylinderGeometry(.025,.04,.62,9),wood,[0,.28,0]);if(type==='branch'){add(new THREE.CylinderGeometry(.012,.02,.25,7),wood,[.07,.30,0],[1,1,1],[0,0,-.8]);}}
+ else if(type==='branch'||type==='wood'){add(new THREE.CylinderGeometry(.025,.04,.62,9),wood,[0,.28,0]);if(type==='branch')add(new THREE.CylinderGeometry(.012,.02,.25,7),wood,[.07,.30,0],[1,1,1],[0,0,-.8]);}
  else if(type==='coconut'||type==='openCoconut'){add(new THREE.SphereGeometry(.14,20,16),new THREE.MeshStandardMaterial({color:type==='coconut'?0x765039:0xd9c7a0,roughness:1}),[0,.12,0],[1,.92,1]);if(type==='openCoconut')add(new THREE.CylinderGeometry(.105,.105,.012,20),new THREE.MeshStandardMaterial({color:0xf0e1c0,roughness:.9}),[0,.23,0]);}
  else if(type==='fish'||type==='cookedFish'){const mat=new THREE.MeshStandardMaterial({color:type==='fish'?0x9baeb1:0xb77d45,roughness:.7});add(new THREE.SphereGeometry(.16,20,14),mat,[0,.13,0],[.62,.62,1.55]);add(new THREE.ConeGeometry(.075,.16,10),mat,[0,.13,-.27],[1,1,1],[Math.PI/2,0,0]);}
  else if(type==='meat'){add(new THREE.SphereGeometry(.14,16,12),new THREE.MeshStandardMaterial({color:0x9c4b3e,roughness:.85}),[0,.12,0],[1.25,.8,.85]);}
- else {add(new THREE.CylinderGeometry(.14,.11,.14,24,1,true),new THREE.MeshStandardMaterial({color:0x92948a,roughness:.9,side:THREE.DoubleSide}),[0,.08,0]);add(new THREE.TorusGeometry(.12,.012,8,24),metal,[0,.15,0]);}
- if(handBone){
-   handBone.add(prop);prop.position.set(0,.015,.10);prop.rotation.set(Math.PI/2,0,0);
-   character.updateMatrixWorld(true);const handWorld=new THREE.Vector3();handBone.getWorldPosition(handWorld);
-   controls.target.copy(handWorld);camera.position.copy(handWorld).add(new THREE.Vector3(side==='R'?1.05:-1.05,.48,2.25));controls.update();
- } else {
-   character.add(prop);prop.position.set(side==='R'?.34:-.34,1.02,.24);
-   controls.target.set(side==='R'?.34:-.34,1.02,0);camera.position.set(side==='R'?1.4:-1.4,1.55,2.7);controls.update();
-   status('No se detectó el hueso de la mano: el objeto se muestra junto al personaje como vista previa.');
- }
+ else{add(new THREE.CylinderGeometry(.14,.11,.14,24,1,true),new THREE.MeshStandardMaterial({color:0x92948a,roughness:.9,side:THREE.DoubleSide}),[0,.08,0]);add(new THREE.TorusGeometry(.12,.012,8,24),metal,[0,.15,0]);}
+ handPropOffsetQ.setFromEuler(new THREE.Euler(Math.PI/2,0,0));
+ scene.add(prop);prop.visible=true;
+ // Segundo ejemplar en pedestal: permite comparar el agarre con la forma completa del objeto.
+ propShowcase=prop.clone(true);propShowcase.position.set(1.35,.42,0);propShowcase.quaternion.setFromEuler(new THREE.Euler(0,0,Math.PI/7));propShowcase.scale.setScalar(.72);scene.add(propShowcase);
  if(type==='rod'){
-   const target=prop;
-   handPropLoader.load('./fishing-rod.glb',gltf=>{
-     if(handProp!==target||$('handObject').value!=='rod')return;
-     while(target.children.length)target.remove(target.children[0]);
-     const model=gltf.scene;model.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3()),max=Math.max(size.x,size.y,size.z)||1;
-     model.scale.setScalar(.95/max);model.updateMatrixWorld(true);const centered=new THREE.Box3().setFromObject(model),center=centered.getCenter(new THREE.Vector3());model.position.sub(center);target.add(model);
-   },undefined,()=>{});
+  const target=prop,show=propShowcase;
+  handPropLoader.load('./fishing-rod.glb',gltf=>{
+   if(handProp!==target||$('handObject').value!=='rod')return;
+   const model=gltf.scene;model.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3()),max=Math.max(size.x,size.y,size.z)||1;
+   model.scale.setScalar(.95/max);model.updateMatrixWorld(true);const centered=new THREE.Box3().setFromObject(model),center=centered.getCenter(new THREE.Vector3());model.position.sub(center);
+   while(target.children.length)target.remove(target.children[0]);while(show.children.length)show.remove(show.children[0]);target.add(model);show.add(model.clone(true));
+  },undefined,()=>{status('No se pudo cargar fishing-rod.glb; se muestra la caña de vista previa.')});
  }
+ if(handBone){syncHandProp();const handWorld=handBone.getWorldPosition(new THREE.Vector3());controls.target.set(handWorld.x*.55,handWorld.y*.55+.25,0);camera.position.set(handWorld.x+1.9,handWorld.y+.65,3.7);controls.update();}
+ else{handPropBone=null;prop.position.set(side==='R'?.34:-.34,1.02,.24);controls.target.set(0,1,0);camera.position.set(2.9,1.7,4.5);controls.update();status('No se detectó el hueso de la mano; el objeto queda visible junto al personaje y en el pedestal.')}
 }
-function loadPose(){const key=$('handObject').value+'_'+$('handSide').value;const data=handPoses[key];setRest();if(data)applySnapshot(data);const opts=selectedHandBones();$('handBoneSelect').innerHTML='';opts.forEach(b=>{const o=document.createElement('option');o.value=b.name;o.textContent=boneLabel(b);$('handBoneSelect').appendChild(o)});const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b);buildHandProp();status(data?'Pose guardada cargada: '+key:'Pose base del modelo. Ajustala y guardala como '+key+'.')}
+function loadPose(){
+ const key=$('handObject').value+'_'+$('handSide').value,data=handPoses[key];
+ if(data){setRest();applySnapshot(data)}else applyDefaultGrip($('handSide').value);
+ const opts=selectedHandBones();$('handBoneSelect').innerHTML='';
+ opts.forEach(b=>{const o=document.createElement('option');o.value=b.name;o.textContent=boneLabel(b);$('handBoneSelect').appendChild(o)});
+ const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b);
+ buildHandProp();syncHandProp();
+ status(data?'Pose guardada cargada: '+key:'Agarre base aplicado. Ajustá brazo, mano y dedos; el objeto se muestra en la mano y en el pedestal.');
+}
 $('handSide').onchange=loadPose;$('handObject').onchange=loadPose;$('handBoneSelect').onchange=()=>{const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b)};
 sliders($('handSliders'),$('handBoneSelect'));
 $('loadHandPose').onclick=loadPose;
 $('savePose').onclick=()=>{const key=$('handObject').value+'_'+$('handSide').value;handPoses[key]=snapshot();localStorage.setItem(poseStoreKey,JSON.stringify(handPoses));status('Pose '+key+' guardada en este navegador.')};
-$('resetPose').onclick=()=>{setRest();const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b);status('Pose restablecida al modelo original.')};
+$('resetPose').onclick=()=>{applyDefaultGrip($('handSide').value);const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b);syncHandProp();status('Agarre base del juego restablecido.')};
 $('downloadPose').onclick=()=>download('survival-playa-poses-manos.json',JSON.stringify(handPoses,null,2));
 function switchMode(next){mode=next;$('tabAnim').classList.toggle('active',next==='anim');$('tabHands').classList.toggle('active',next==='hands');$('animListPane').classList.toggle('hidden',next!=='anim');$('handListPane').classList.toggle('hidden',next!=='hands');$('animControls').classList.toggle('hidden',next!=='anim');$('handControls').classList.toggle('hidden',next!=='hands');$('animToolbar').classList.toggle('hidden',next!=='anim');$('handToolbar').classList.toggle('hidden',next!=='hands');if(next==='hands')loadPose();else if(selectedClip)selectClip(selectedClip)}
 $('tabAnim').onclick=()=>switchMode('anim');$('tabHands').onclick=()=>switchMode('hands');
 $('downloadPose').onclick=()=>download('survival-playa-poses-manos.json',JSON.stringify(handPoses,null,2));
-const loader=new GLTFLoader();loader.load('./man-base-character-rigged.glb',gltf=>{character=gltf.scene;character.traverse(o=>{if(o.isBone){bones.push(o);boneByName.set(o.name,o)}if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false}});character.updateMatrixWorld(true);let box=new THREE.Box3().setFromObject(character,true);const h=box.max.y-box.min.y;if(h>0)character.scale.multiplyScalar(1.8/h);character.updateMatrixWorld(true);box.setFromObject(character,true);character.position.y-=box.min.y;box.setFromObject(character,true);const center=box.getCenter(new THREE.Vector3());character.position.x-=center.x;character.position.z-=center.z;scene.add(character);for(const b of bones)originalRotations.set(b.name,b.quaternion.toArray());mixer=new THREE.AnimationMixer(character);clips=gltf.animations||[];clips.forEach(c=>actions[c.name]=mixer.clipAction(c));buildList();if(clips.length)selectClip(clips[0]);const bodyBones=bones.filter(b=>!/(thumb|index|middle|ring|pinky|finger)/i.test(b.name));buildBoneOptions($('boneSelect'),b=>bodyBones.includes(b));buildBoneOptions($('handBoneSelect'),b=>selectedHandBones().includes(b));$('load').textContent='Modelo cargado · '+bones.length+' huesos · '+clips.length+' animaciones';status('Modelo listo. Arrastrá para girar la cámara y usá la rueda para acercarte.');loadPose()},undefined,err=>{$('load').textContent='No se pudo cargar el modelo';status('Error al cargar GLB: '+err.message)});
-function animate(now){requestAnimationFrame(animate);const t=now/1000;if(playing){if(playMode==='edited'&&frames.length>1){const elapsed=(t-playStart)%Math.max(.01,duration);resetToFrame(elapsed);$('timeline').value=elapsed;$('timeValue').value=elapsed}else if(mixer){mixer.update(Math.min(.04,Math.max(0,t-last)))}last=t}controls.update();renderer.render(scene,camera)}requestAnimationFrame(animate);
+const loader=new GLTFLoader();loader.load('./man-base-character-rigged.glb',gltf=>{character=gltf.scene;character.traverse(o=>{if(o.isBone){bones.push(o);boneByName.set(o.name,o)}if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false}});character.updateMatrixWorld(true);let box=new THREE.Box3().setFromObject(character,true);const h=box.max.y-box.min.y;if(h>0)character.scale.multiplyScalar(1.8/h);character.updateMatrixWorld(true);box.setFromObject(character,true);character.position.y-=box.min.y;box.setFromObject(character,true);const center=box.getCenter(new THREE.Vector3());character.position.x-=center.x;character.position.z-=center.z;scene.add(character);for(const b of bones)originalRotations.set(b.name,b.quaternion.toArray());mixer=new THREE.AnimationMixer(character);clips=gltf.animations||[];clips.forEach(c=>actions[c.name]=mixer.clipAction(c));buildRigMap();buildList();if(clips.length)selectClip(clips[0]);const bodyBones=bones.filter(b=>!/(thumb|index|middle|ring|pinky|finger)/i.test(b.name));buildBoneOptions($('boneSelect'),b=>bodyBones.includes(b));buildBoneOptions($('handBoneSelect'),b=>selectedHandBones().includes(b));$('load').textContent='Modelo cargado · '+bones.length+' huesos · '+clips.length+' animaciones';status('Modelo listo. Arrastrá para girar la cámara y usá la rueda para acercarte.');loadPose()},undefined,err=>{$('load').textContent='No se pudo cargar el modelo';status('Error al cargar GLB: '+err.message)});
+function animate(now){requestAnimationFrame(animate);const t=now/1000;if(playing){if(playMode==='edited'&&frames.length>1){const elapsed=(t-playStart)%Math.max(.01,duration);resetToFrame(elapsed);$('timeline').value=elapsed;$('timeValue').value=elapsed}else if(mixer){mixer.update(Math.min(.04,Math.max(0,t-last)))}last=t}controls.update();syncHandProp();renderer.render(scene,camera)}requestAnimationFrame(animate);
 </script>
 </body></html>
