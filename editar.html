@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Survival Playa · Editor 3D</title>
+<style>
+:root{color-scheme:dark;--bg:#101713;--panel:#19231d;--line:#34443a;--muted:#9aab9e;--green:#8fc69b;--gold:#d5b77b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#edf3ed;font:14px/1.45 system-ui,Segoe UI,sans-serif}
+header{height:62px;padding:0 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:#131c16}
+header strong{font-size:16px;letter-spacing:.08em}header a{color:var(--green);text-decoration:none}
+main{display:grid;grid-template-columns:300px minmax(360px,1fr) 330px;gap:12px;padding:12px;max-width:1700px;margin:auto;height:calc(100vh - 62px)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;min-height:0;overflow:auto}
+.left,.right{padding:15px}.center{display:flex;flex-direction:column;overflow:hidden}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--green);margin:3px 0 12px}
+h3{font-size:13px;margin:15px 0 8px;color:#dce9de}
+.tabs{display:flex;gap:6px;margin-bottom:14px}.tab,button,select,input{font:inherit}
+button,.tab{border:1px solid var(--line);border-radius:8px;background:#253329;color:#eaf2eb;padding:9px 11px;cursor:pointer}
+button:hover,.tab.active{border-color:var(--green);background:#304638}.primary{background:#496c50;border-color:#719b78}.danger{background:#4a302b}
+.list{display:grid;gap:7px}.anim{display:flex;align-items:center;justify-content:space-between;padding:10px;border:1px solid var(--line);border-radius:8px;background:#141d17}.anim.selected{border-color:var(--gold);background:#2a3024}.anim small{display:block;color:var(--muted);font-size:11px}.pencil{font-size:17px;padding:6px 10px}
+#viewport{flex:1;min-height:280px;position:relative;background:radial-gradient(ellipse at 50% 40%,#34483a,#111a15 70%)}canvas{display:block;width:100%;height:100%}
+#load{position:absolute;left:14px;bottom:12px;color:#c3d1c6;font-size:12px;background:#101713bb;padding:6px 9px;border-radius:7px}
+.toolbar{display:flex;gap:7px;flex-wrap:wrap;padding:10px;border-top:1px solid var(--line);background:#151e18}
+label{display:block;color:var(--muted);font-size:12px;margin:10px 0 5px}select,input[type=text],input[type=number]{width:100%;background:#101813;color:#eef4ef;border:1px solid var(--line);border-radius:7px;padding:8px}
+input[type=range]{width:100%;accent-color:#91c69a}.sliderline{display:grid;grid-template-columns:1fr 55px;align-items:center;gap:8px}.sliderline output{text-align:right;color:var(--gold);font-variant-numeric:tabular-nums}
+.row{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.hint{color:var(--muted);font-size:12px;margin:8px 0}.keyframes{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}.keyframes button{padding:5px 8px;font-size:11px}
+.hidden{display:none!important}.object-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.status{padding:8px 10px;color:#c6d5c9;font-size:12px;border-top:1px solid var(--line)}
+@media(max-width:1050px){main{grid-template-columns:250px 1fr;height:auto;min-height:calc(100vh - 62px)}.right{grid-column:1/-1;min-height:350px}#viewport{height:55vh}}
+@media(max-width:680px){main{display:flex;flex-direction:column}.left{max-height:320px}.center{min-height:520px}.right{min-height:380px}#viewport{height:420px}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"}}</script>
+</head>
+<body>
+<header><strong>SURVIVAL PLAYA <span style="color:var(--gold)">/ EDITOR 3D</span></strong><a href="./">← Volver al juego</a></header>
+<main>
+<section class="panel left">
+ <div class="tabs"><button class="tab active" id="tabAnim">Edición de animaciones</button><button class="tab" id="tabHands">Edición de poses</button></div>
+ <div id="animListPane">
+  <h2>Animaciones del personaje</h2><p class="hint">Elegí una animación y tocá el lápiz para editarla. Se cargan los clips que trae el modelo 3D.</p>
+  <div id="animList" class="list"><p class="hint">Cargando animaciones…</p></div>
+  <h3>Edición paso a paso</h3>
+  <ol class="hint" style="padding-left:18px"><li>Elegí el clip con el lápiz.</li><li>Seleccioná un hueso y ajustá su rotación.</li><li>Mové el tiempo y agregá una clave.</li><li>Reproducí y guardá la animación.</li></ol>
+ </div>
+ <div id="handListPane" class="hidden">
+  <h2>Poses de manos por objeto</h2><p class="hint">Ajustá brazo, antebrazo, muñeca y dedos para la forma de sujetar cada objeto.</p>
+  <label>Objeto que sostiene</label><select id="handObject"><option value="axe">Hacha</option><option value="knife">Cuchillo</option><option value="rod">Caña de pescar</option><option value="torch">Antorcha</option><option value="stone">Piedra</option><option value="branch">Rama</option><option value="coconut">Coco</option><option value="fish">Pescado</option><option value="bowl">Cuenco</option></select>
+  <label>Mano a editar</label><select id="handSide"><option value="R">Derecha</option><option value="L">Izquierda</option></select>
+  <button class="primary" id="loadHandPose" style="width:100%;margin-top:10px">Cargar pose guardada</button>
+  <p class="hint">Los controles de la derecha modifican los huesos de la mano seleccionada. Podés guardar una pose distinta para cada objeto y mano.</p>
+ </div>
+</section>
+<section class="panel center">
+ <div id="viewport"><div id="load">Preparando modelo 3D…</div></div>
+ <div class="toolbar" id="animToolbar">
+  <button id="editStart" class="primary">✎ Iniciar edición</button><button id="play">▶ Reproducir</button><button id="stop">■ Detener</button><button id="addKey">＋ Añadir clave</button><button id="saveAnim" class="primary">Guardar animación</button>
+ </div>
+ <div class="toolbar hidden" id="handToolbar">
+  <button id="savePose" class="primary">Guardar pose de esta mano</button><button id="resetPose">Restablecer pose</button>
+ </div>
+ <div class="status" id="status">Cargando el personaje original…</div>
+</section>
+<section class="panel right">
+ <div id="animControls">
+  <h2>Editor de movimiento</h2>
+  <label>Animación seleccionada</label><input id="clipName" type="text" value="walk">
+  <label>Hueso del cuerpo</label><select id="boneSelect"></select>
+  <div id="boneSliders"></div>
+  <h3>Línea de tiempo</h3>
+  <div class="row"><div><label>Tiempo (segundos)</label><input id="timeValue" type="number" min="0" max="10" step=".05" value="0"></div><div><label>Duración</label><input id="duration" type="number" min=".1" max="20" step=".1" value="1"></div></div>
+  <input id="timeline" type="range" min="0" max="1" step=".01" value="0">
+  <div class="keyframes" id="keyframes"></div>
+  <p class="hint">Cada clave guarda la pose completa del esqueleto en ese instante. Para un movimiento fluido, agregá varias claves en distintos tiempos.</p>
+  <button id="downloadAnim" style="width:100%">Exportar animación .json</button>
+ </div>
+ <div id="handControls" class="hidden">
+  <h2>Ajuste de agarre</h2>
+  <label>Hueso</label><select id="handBoneSelect"></select>
+  <div id="handSliders"></div>
+  <div class="hint">Consejo: rotá primero el brazo y antebrazo; después ajustá muñeca y dedos para cerrar el agarre alrededor del objeto.</div>
+  <button id="downloadPose" style="width:100%">Exportar poses .json</button>
+ </div>
+</section>
+</main>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+const $=id=>document.getElementById(id);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x18241c);
+const camera=new THREE.PerspectiveCamera(38,1,.01,100);camera.position.set(2.7,1.65,4.4);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('viewport').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,.9,0);controls.enableDamping=true;controls.minDistance=1.5;controls.maxDistance=8;
+scene.add(new THREE.HemisphereLight(0xdcebdc,0x35412e,2.0));const key=new THREE.DirectionalLight(0xffedcf,3.2);key.position.set(-3,6,4);key.castShadow=true;scene.add(key);const fill=new THREE.DirectionalLight(0xb5d4e8,1.1);fill.position.set(4,3,-4);scene.add(fill);
+const floor=new THREE.Mesh(new THREE.CircleGeometry(3,64),new THREE.MeshStandardMaterial({color:0x344236,roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-.025;floor.receiveShadow=true;scene.add(floor);
+const grid=new THREE.GridHelper(6,24,0x647d68,0x344b3a);grid.position.y=-.018;scene.add(grid);
+let character=null,mixer=null,clips=[],actions={},bones=[],boneByName=new Map(),selectedClip=null,frames=[],duration=1,playing=false,last=0,selectedBone=null;
+const originalRotations=new Map();let mode='anim';
+const animStoreKey='survivalPlaya.animationEdits.v1',poseStoreKey='survivalPlaya.handPoses.v1';
+const readStore=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k)||'null')||fallback}catch{return fallback}};
+const animationEdits=readStore(animStoreKey,{}),handPoses=readStore(poseStoreKey,{});
+function status(t){$('status').textContent=t}
+function resize(){const r=$('viewport').getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/Math.max(1,r.height);camera.updateProjectionMatrix()}
+new ResizeObserver(resize).observe($('viewport'));resize();
+function boneLabel(b){return b.name.replace(/^mixamorig:?/i,'').replace(/([a-z])([A-Z])/g,'$1 $2')}
+function setRest(){for(const b of bones){const q=originalRotations.get(b.name);if(q)b.quaternion.fromArray(q)}}
+function buildBoneOptions(select,filter=()=>true){select.innerHTML='';for(const b of bones.filter(filter)){const o=document.createElement('option');o.value=b.name;o.textContent=boneLabel(b);select.appendChild(o)}}
+function sliders(container,boneSelect,onChange){container.innerHTML='';for(const axis of ['x','y','z']){const wrap=document.createElement('div');wrap.innerHTML='<label>Rotación '+axis.toUpperCase()+' (grados)</label><div class="sliderline"><input type="range" min="-180" max="180" step="1" data-axis="'+axis+'"><output>0°</output></div>';const input=wrap.querySelector('input'),out=wrap.querySelector('output');input.addEventListener('input',()=>{const b=boneByName.get(boneSelect.value);if(!b)return;const e=new THREE.Euler().setFromQuaternion(b.quaternion,'XYZ');e[axis]=THREE.MathUtils.degToRad(Number(input.value));b.quaternion.setFromEuler(e);out.textContent=input.value+'°';onChange?.()});container.appendChild(wrap)}}
+function syncSliders(container,bone){const e=new THREE.Euler().setFromQuaternion(bone.quaternion,'XYZ');container.querySelectorAll('input').forEach(i=>{const v=Math.round(THREE.MathUtils.radToDeg(e[i.dataset.axis]));i.value=v;i.nextElementSibling.textContent=v+'°'})}
+function snapshot(){const snap={};for(const b of bones)snap[b.name]=b.quaternion.toArray();return snap}
+function applySnapshot(s){for(const [name,q] of Object.entries(s||{})){const b=boneByName.get(name);if(b&&q?.length===4)b.quaternion.fromArray(q)}}
+function resetToFrame(t){if(!frames.length)return;let a=frames[0],b=frames[frames.length-1];for(let i=0;i<frames.length-1;i++){if(t>=frames[i].t&&t<=frames[i+1].t){a=frames[i];b=frames[i+1];break}}const span=Math.max(.0001,b.t-a.t),u=THREE.MathUtils.clamp((t-a.t)/span,0,1);for(const bone of bones){const qa=a.pose[bone.name],qb=b.pose[bone.name];if(!qa||!qb)continue;const q=new THREE.Quaternion().fromArray(qa).slerp(new THREE.Quaternion().fromArray(qb),u);bone.quaternion.copy(q)}}
+function makeFrame(t){const pose=snapshot();const old=frames.findIndex(f=>Math.abs(f.t-t)<.001);if(old>=0)frames[old]={t,pose};else frames.push({t,pose});frames.sort((a,b)=>a.t-b.t);renderFrames();status('Clave guardada en '+t.toFixed(2)+' s.')}
+function renderFrames(){$('keyframes').innerHTML='';frames.forEach((f,i)=>{const b=document.createElement('button');b.textContent='◆ '+f.t.toFixed(2)+' s';b.onclick=()=>{playing=false;resetToFrame(f.t);$('timeline').value=f.t;$('timeValue').value=f.t;syncSliders($('boneSliders'),boneByName.get($('boneSelect').value));};$('keyframes').appendChild(b)})}
+function clipFromFrames(){const tracks=[];for(const bone of bones){const vals=frames.filter(f=>f.pose[bone.name]);if(vals.length<2)continue;const times=vals.map(f=>f.t),values=vals.flatMap(f=>f.pose[bone.name]);tracks.push(new THREE.QuaternionKeyframeTrack(bone.name+'.quaternion',times,values))}return new THREE.AnimationClip($('clipName').value||'custom',Math.max(.1,duration),tracks)}
+function stopPreview(){playing=false;if(mixer) mixer.stopAllAction();setRest()}
+function selectClip(clip){selectedClip=clip;$('clipName').value=clip.name;stopPreview();const saved=animationEdits[clip.name];if(saved?.frames){frames=saved.frames;duration=saved.duration||clip.duration;frames.sort((a,b)=>a.t-b.t);resetToFrame(0)}else{frames=[];duration=Math.max(.1,clip.duration);$('duration').value=duration} $('duration').value=duration;$('timeline').max=duration;$('timeValue').max=duration;renderFrames();document.querySelectorAll('.anim').forEach(x=>x.classList.toggle('selected',x.dataset.name===clip.name));status('Seleccionada: '+clip.name+'. Pulsá Iniciar edición para crear claves.')}
+function buildList(){const list=$('animList');list.innerHTML='';clips.forEach(clip=>{const row=document.createElement('div');row.className='anim';row.dataset.name=clip.name;const info=document.createElement('div');info.innerHTML='<strong>'+clip.name+'</strong><small>'+clip.duration.toFixed(2)+' segundos · '+clip.tracks.length+' pistas</small>';const pencil=document.createElement('button');pencil.className='pencil';pencil.title='Editar animación';pencil.textContent='✎';pencil.onclick=()=>selectClip(clip);row.append(info,pencil);row.ondblclick=()=>selectClip(clip);list.appendChild(row)})}
+function startEditing(){if(!selectedClip)return;stopPreview();frames=[];duration=Math.max(.1,selectedClip.duration);$('duration').value=duration;$('timeline').max=duration;$('timeValue').max=duration;setRest();makeFrame(0);status('Edición iniciada. Ajustá huesos y agregá claves en distintos tiempos.')}
+function playOriginal(){if(!selectedClip||!mixer)return;stopPreview();const action=mixer.clipAction(selectedClip);action.reset();action.setLoop(THREE.LoopRepeat);action.play();playing=true;status('Reproduciendo clip original: '+selectedClip.name)}
+function playEdited(){if(frames.length<2){status('Agregá al menos dos claves para reproducir.');return}stopPreview();playing=true;last=performance.now()/1000;status('Reproduciendo animación editada.')}
+function saveAnimation(){if(!selectedClip){status('Elegí una animación primero.');return}const clip=clipFromFrames();const data={name:clip.name,duration,frames,clip:clip.toJSON(),savedAt:new Date().toISOString()};animationEdits[selectedClip.name]=data;localStorage.setItem(animStoreKey,JSON.stringify(animationEdits));download('survival-playa-animaciones.json',JSON.stringify(animationEdits,null,2));status('Animación guardada en este navegador y exportada.')}
+function download(name,data){const a=document.createElement('a'),url=URL.createObjectURL(new Blob([data],{type:'application/json'}));a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}
+function loadSavedAnimation(){const saved=animationEdits[selectedClip?.name];if(!saved)return;frames=saved.frames||[];duration=saved.duration||1;$('duration').value=duration;$('timeline').max=duration;$('timeValue').max=duration;resetToFrame(0);renderFrames()}
+$('boneSelect').addEventListener('change',()=>{const b=boneByName.get($('boneSelect').value);if(b)syncSliders($('boneSliders'),b)});
+sliders($('boneSliders'),$('boneSelect'));
+$('editStart').onclick=startEditing;$('play').onclick=()=>playing?playEdited():playOriginal();$('stop').onclick=stopPreview;
+$('addKey').onclick=()=>{const t=Number($('timeValue').value);makeFrame(t)};
+$('duration').onchange=()=>{duration=Math.max(.1,Number($('duration').value)||1);$('timeline').max=duration;$('timeValue').max=duration};
+$('timeline').oninput=()=>{const t=Number($('timeline').value);$('timeValue').value=t;if(frames.length)resetToFrame(t);else if(selectedClip&&mixer){stopPreview();const a=mixer.clipAction(selectedClip);a.play();a.paused=true;a.time=t;a.getMixer().update(0)}const b=boneByName.get($('boneSelect').value);if(b)syncSliders($('boneSliders'),b)};
+$('timeValue').onchange=()=>{$('timeline').value=$('timeValue').value;$('timeline').dispatchEvent(new Event('input'))};
+$('saveAnim').onclick=saveAnimation;$('downloadAnim').onclick=()=>download('survival-playa-animaciones.json',JSON.stringify(animationEdits,null,2));
+function selectedHandBones(){const side=$('handSide').value==='R'?'Right':'Left';return bones.filter(b=>new RegExp(side,'i').test(b.name)&&/(arm|forearm|hand|thumb|index|middle|ring|pinky|finger|wrist)/i.test(b.name))}
+function loadPose(){const key=$('handObject').value+'_'+$('handSide').value;const data=handPoses[key];setRest();if(data)applySnapshot(data);const opts=selectedHandBones();$('handBoneSelect').innerHTML='';opts.forEach(b=>{const o=document.createElement('option');o.value=b.name;o.textContent=boneLabel(b);$('handBoneSelect').appendChild(o)});const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b);status(data?'Pose guardada cargada: '+key:'Pose base del modelo. Ajustala y guardala como '+key+'.')}
+$('handSide').onchange=loadPose;$('handObject').onchange=loadPose;$('handBoneSelect').onchange=()=>{const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b)};
+sliders($('handSliders'),$('handBoneSelect'));
+$('loadHandPose').onclick=loadPose;
+$('savePose').onclick=()=>{const key=$('handObject').value+'_'+$('handSide').value;handPoses[key]=snapshot();localStorage.setItem(poseStoreKey,JSON.stringify(handPoses));status('Pose '+key+' guardada en este navegador.')};
+$('resetPose').onclick=()=>{setRest();const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b);status('Pose restablecida al modelo original.')};
+$('downloadPose').onclick=()=>download('survival-playa-poses-manos.json',JSON.stringify(handPoses,null,2));
+function switchMode(next){mode=next;$('tabAnim').classList.toggle('active',next==='anim');$('tabHands').classList.toggle('active',next==='hands');$('animListPane').classList.toggle('hidden',next!=='anim');$('handListPane').classList.toggle('hidden',next!=='hands');$('animControls').classList.toggle('hidden',next!=='anim');$('handControls').classList.toggle('hidden',next!=='hands');$('animToolbar').classList.toggle('hidden',next!=='anim');$('handToolbar').classList.toggle('hidden',next!=='hands');if(next==='hands')loadPose();else if(selectedClip)selectClip(selectedClip)}
+$('tabAnim').onclick=()=>switchMode('anim');$('tabHands').onclick=()=>switchMode('hands');
+$('downloadPose').onclick=()=>download('survival-playa-poses-manos.json',JSON.stringify(handPoses,null,2));
+const loader=new GLTFLoader();loader.load('./man-base-character-rigged.glb',gltf=>{character=gltf.scene;character.traverse(o=>{if(o.isBone){bones.push(o);boneByName.set(o.name,o)}if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false}});character.updateMatrixWorld(true);let box=new THREE.Box3().setFromObject(character,true);const h=box.max.y-box.min.y;if(h>0)character.scale.multiplyScalar(1.8/h);character.updateMatrixWorld(true);box.setFromObject(character,true);character.position.y-=box.min.y;box.setFromObject(character,true);const center=box.getCenter(new THREE.Vector3());character.position.x-=center.x;character.position.z-=center.z;scene.add(character);for(const b of bones)originalRotations.set(b.name,b.quaternion.toArray());mixer=new THREE.AnimationMixer(character);clips=gltf.animations||[];clips.forEach(c=>actions[c.name]=mixer.clipAction(c));buildList();if(clips.length)selectClip(clips[0]);const bodyBones=bones.filter(b=>!/(thumb|index|middle|ring|pinky|finger)/i.test(b.name));buildBoneOptions($('boneSelect'),b=>bodyBones.includes(b));buildBoneOptions($('handBoneSelect'),b=>selectedHandBones().includes(b));$('load').textContent='Modelo cargado · '+bones.length+' huesos · '+clips.length+' animaciones';status('Modelo listo. Arrastrá para girar la cámara y usá la rueda para acercarte.');loadPose()},undefined,err=>{$('load').textContent='No se pudo cargar el modelo';status('Error al cargar GLB: '+err.message)});
+function animate(now){requestAnimationFrame(animate);const t=now/1000;if(playing){if(frames.length>1){const elapsed=(t-last)%Math.max(.01,duration);resetToFrame(elapsed);$('timeline').value=elapsed;$('timeValue').value=elapsed}else if(mixer)mixer.update(Math.min(.04,(now-(last*1000))/1000));last=t}controls.update();renderer.render(scene,camera)}requestAnimationFrame(animate);
+</script>
+</body></html>
