@@ -234,7 +234,6 @@ function buildHandProp(){
  else if(type==='fish'||type==='cookedFish'){const mat=new THREE.MeshStandardMaterial({color:type==='fish'?0x9baeb1:0xb77d45,roughness:.7});add(new THREE.SphereGeometry(.16,20,14),mat,[0,.13,0],[.62,.62,1.55]);add(new THREE.ConeGeometry(.075,.16,10),mat,[0,.13,-.27],[1,1,1],[Math.PI/2,0,0]);}
  else if(type==='meat'){add(new THREE.SphereGeometry(.14,16,12),new THREE.MeshStandardMaterial({color:0x9c4b3e,roughness:.85}),[0,.12,0],[1.25,.8,.85]);}
  else{add(new THREE.CylinderGeometry(.14,.11,.14,24,1,true),new THREE.MeshStandardMaterial({color:0x92948a,roughness:.9,side:THREE.DoubleSide}),[0,.08,0]);add(new THREE.TorusGeometry(.12,.012,8,24),metal,[0,.15,0]);}
- propTransform=JSON.parse(JSON.stringify(defaultPropTransform));
  scene.add(prop);prop.visible=true;
  // Segundo ejemplar en pedestal: permite comparar el agarre con la forma completa del objeto.
  propShowcase=prop.clone(true);propShowcase.position.set(1.35,.42,0);propShowcase.quaternion.setFromEuler(new THREE.Euler(0,0,Math.PI/7));propShowcase.scale.setScalar(.72);scene.add(propShowcase);
