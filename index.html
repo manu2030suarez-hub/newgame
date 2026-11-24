@@ -3814,7 +3814,7 @@ function update(dt, time) {
   // Poses de agarre creadas en editar.html: se aplican sobre el brazo/mano del objeto equipado.
   const gripPose = savedHandPoses[`${activeTool}_R`];
   if (gripPose) for (const bone of bones) {
-    if (!/(right|[_.\\-:|]r([_.\\-:|]|$))/i.test(bone.name) || !/(arm|forearm|hand|thumb|index|middle|ring|pinky|finger)/i.test(bone.name)) continue;
+    if (!RIGHT.test(bone.name) || !/(arm|forearm|hand|thumb|index|middle|ring|pinky|finger)/i.test(bone.name)) continue;
     const q = gripPose[bone.name]; if (q && q.length === 4) bone.quaternion.fromArray(q);
   }
   if(toolAction==='fist'){const pu=Math.sin(Math.PI*clamp(toolActionT/.5,0,1));rw(B.uarmR,1.15*pu);rw(B.farmR,.5*pu);}
