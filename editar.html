@@ -365,6 +365,8 @@ function buildHandProp(){
  else{handPropBone=null;prop.position.set(side==='R'?.34:-.34,1.02,.24);controls.target.set(0,1,0);camera.position.set(2.9,1.7,4.5);controls.update();status('No se detectó el hueso de la mano; el objeto queda visible junto al personaje y en el pedestal.')}
 }
 function loadPose(){
+ const type=$('handObject').value;
+ if(['axe','knife','rod','torch'].includes(type)&&$('handSide').value!=='R'){$('handSide').value='R';status('En el juego esta herramienta se equipa en la mano derecha; cambié la selección a esa mano.');}
  const key=$('handObject').value+'_'+$('handSide').value,data=handPoses[key],boneData=data?.bones||data;
  if(data){setRest();applySnapshot(boneData);propTransform={...JSON.parse(JSON.stringify(defaultPropTransform)),...(data.prop||{}),position:{...defaultPropTransform.position,...(data.prop?.position||{})},rotation:{...defaultPropTransform.rotation,...(data.prop?.rotation||{})}}}else{applyDefaultGrip($('handSide').value);propTransform=JSON.parse(JSON.stringify(defaultPropTransform))}
  const opts=selectedHandBones();$('handBoneSelect').innerHTML='';
