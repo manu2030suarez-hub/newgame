@@ -207,6 +207,7 @@ function applyDefaultGrip(side){
 function clearHandProp(){
  if(handProp){scene.remove(handProp);handProp=null}
  if(propShowcase){scene.remove(propShowcase);propShowcase=null}
+ previewToolRoot=null;previewAxeTool=null;previewKnifeTool=null;previewRodTool=null;previewTorchTool=null;previewTorchFlame=null;previewTorchInnerFlame=null;previewTorchLight=null;previewTorchSmoke=[];
  handPropBone=null;
 }
 function syncHandProp(){
@@ -217,10 +218,82 @@ function syncHandProp(){
  const localRotation=new THREE.Euler(THREE.MathUtils.degToRad(propTransform.rotation.x),THREE.MathUtils.degToRad(propTransform.rotation.y),THREE.MathUtils.degToRad(propTransform.rotation.z),'XYZ');
  handProp.position.copy(p).add(offset);handProp.quaternion.copy(q).multiply(new THREE.Quaternion().setFromEuler(localRotation));handProp.scale.setScalar(propTransform.scale);
 }
+let previewRightHandBone=null,previewToolRoot=null,previewAxeTool=null,previewKnifeTool=null,previewRodTool=null,previewTorchTool=null,previewTorchFlame=null,previewTorchInnerFlame=null,previewTorchLight=null,previewTorchSmoke=[];
+const isLowPowerDevice=false;
+function buildGameHeldToolModels(){
+  if(!previewRightHandBone || previewToolRoot)return;
+  const woodCanvas=document.createElement('canvas');woodCanvas.width=256;woodCanvas.height=256;
+  const wg=woodCanvas.getContext('2d');wg.fillStyle='#68452c';wg.fillRect(0,0,256,256);
+  for(let i=0;i<190;i++){const x=Math.random()*256,y=Math.random()*256;wg.strokeStyle=`rgba(${Math.random()<.5?'30,18,10':'190,135,78'},${.08+Math.random()*.2})`;wg.lineWidth=.5+Math.random()*2;wg.beginPath();wg.moveTo(x,y);wg.bezierCurveTo(x+18,y-4,x+35,y+5,x+65,y-2);wg.stroke();}
+  const woodTex=new THREE.CanvasTexture(woodCanvas);woodTex.colorSpace=THREE.SRGBColorSpace;woodTex.wrapS=woodTex.wrapT=THREE.RepeatWrapping;woodTex.anisotropy=4;
+  const stoneCanvas=document.createElement('canvas');stoneCanvas.width=256;stoneCanvas.height=256;
+  const sg=stoneCanvas.getContext('2d');sg.fillStyle='#777b78';sg.fillRect(0,0,256,256);
+  for(let i=0;i<2300;i++){const v=70+Math.random()*115;sg.fillStyle=`rgba(${v|0},${(v+Math.random()*8)|0},${(v+Math.random()*10)|0},${.12+Math.random()*.35})`;sg.beginPath();sg.ellipse(Math.random()*256,Math.random()*256,1+Math.random()*7,.5+Math.random()*3,Math.random()*3,0,Math.PI*2);sg.fill();}
+  const stoneTex=new THREE.CanvasTexture(stoneCanvas);stoneTex.colorSpace=THREE.SRGBColorSpace;stoneTex.anisotropy=4;
+  const woodMat=new THREE.MeshStandardMaterial({map:woodTex,roughness:.88});
+  const stoneMat=new THREE.MeshStandardMaterial({map:stoneTex,roughness:.9});
+  const wrapMat=new THREE.MeshStandardMaterial({color:0x705039,roughness:.96});
+  const leatherMat=new THREE.MeshStandardMaterial({color:0x34251c,roughness:.98});
+  const steelMat=new THREE.MeshStandardMaterial({color:0xb8bdb8,roughness:.31,metalness:.22});
+  previewToolRoot=new THREE.Group();scene.add(previewToolRoot);
+  // Hacha de mano: mango de madera veteada, cuello de cuero y cabeza de piedra tallada con bisel.
+  previewAxeTool=new THREE.Group();previewToolRoot.add(previewAxeTool);
+  const haft=new THREE.Mesh(new THREE.CylinderGeometry(.031,.043,.82,12,4),woodMat);haft.position.y=-.31;haft.castShadow=true;haft.receiveShadow=true;previewAxeTool.add(haft);
+  const butt=new THREE.Mesh(new THREE.CylinderGeometry(.044,.04,.055,12),new THREE.MeshStandardMaterial({color:0x493323,roughness:.95}));butt.position.y=-.72;previewAxeTool.add(butt);
+  for(let i=0;i<5;i++){const band=new THREE.Mesh(new THREE.TorusGeometry(.041-i*.001,.006,6,16),wrapMat);band.rotation.x=Math.PI/2;band.position.set(0,.005-i*.027,.0);previewAxeTool.add(band);}
+  const headShape=new THREE.Shape();headShape.moveTo(-.10,.18);headShape.lineTo(.02,.25);headShape.lineTo(.27,.22);headShape.lineTo(.43,.12);headShape.lineTo(.45,-.015);headShape.lineTo(.32,-.12);headShape.lineTo(.05,-.13);headShape.lineTo(-.10,-.06);headShape.lineTo(-.10,.18);
+  const headGeo=new THREE.ExtrudeGeometry(headShape,{depth:.12,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.025,bevelThickness:.025,curveSegments:3});headGeo.computeVertexNormals();
+  const axeHead=new THREE.Mesh(headGeo,stoneMat);axeHead.position.set(-.03,.13,-.06);axeHead.scale.set(.52,.72,.85);axeHead.castShadow=true;axeHead.receiveShadow=true;previewAxeTool.add(axeHead);
+  const edgeMat=new THREE.MeshStandardMaterial({color:0xb5b9b3,roughness:.36,metalness:.08});
+  const edgeShape=new THREE.Shape();edgeShape.moveTo(.31,.22);edgeShape.lineTo(.46,.13);edgeShape.lineTo(.48,.045);edgeShape.lineTo(.39,-.035);edgeShape.lineTo(.29,.015);edgeShape.closePath();
+  const edgeGeo=new THREE.ExtrudeGeometry(edgeShape,{depth:.126,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.012,bevelThickness:.012});
+  const edge=new THREE.Mesh(edgeGeo,steelMat);edge.position.set(-.03,.13,-.063);edge.scale.set(.52,.72,.85);edge.castShadow=true;previewAxeTool.add(edge);
+  const binding=new THREE.Mesh(new THREE.CylinderGeometry(.065,.06,.13,10),leatherMat);binding.position.set(.01,.17,0);previewAxeTool.add(binding);
+  for(let i=0;i<3;i++){const lace=new THREE.Mesh(new THREE.TorusGeometry(.063,.004,5,20),wrapMat);lace.rotation.x=Math.PI/2;lace.position.set(.01,.12+i*.045,0);previewAxeTool.add(lace);}
+  // Cuchillo de sílex: mango corto envuelto, espiga y hoja facetada con filo trabajado.
+  previewKnifeTool=new THREE.Group();previewToolRoot.add(previewKnifeTool);
+  const grip=new THREE.Mesh(new THREE.CylinderGeometry(.027,.034,.25,10),woodMat);grip.position.y=-.10;grip.castShadow=true;previewKnifeTool.add(grip);
+  for(let i=0;i<5;i++){const band=new THREE.Mesh(new THREE.TorusGeometry(.031,.0045,5,12),wrapMat);band.rotation.x=Math.PI/2;band.position.y=-.20+i*.047;previewKnifeTool.add(band);}
+  const bladeShape=new THREE.Shape();bladeShape.moveTo(-.038,.015);bladeShape.lineTo(.038,.015);bladeShape.lineTo(.052,.19);bladeShape.lineTo(.018,.30);bladeShape.lineTo(-.008,.36);bladeShape.lineTo(-.055,.24);bladeShape.lineTo(-.038,.015);
+  const bladeGeo=new THREE.ExtrudeGeometry(bladeShape,{depth:.018,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.006,bevelThickness:.006});bladeGeo.computeVertexNormals();
+  const bladeMat=new THREE.MeshStandardMaterial({color:0xaeb5b3,roughness:.42,metalness:.12});
+  const blade=new THREE.Mesh(bladeGeo,bladeMat);blade.scale.set(.72,.72,.9);blade.position.z=-.009;blade.castShadow=true;previewKnifeTool.add(blade);
+  const spine=new THREE.Mesh(new THREE.BoxGeometry(.012,.22,.012),steelMat);spine.position.set(-.025,.17,0);previewKnifeTool.add(spine);
+  const guard=new THREE.Mesh(new THREE.CylinderGeometry(.041,.041,.025,10),leatherMat);guard.position.y=.035;previewKnifeTool.add(guard);
+  // Caña artesanal de madera, con sedal fino visible cuando se equipa.
+  previewRodTool=new THREE.Group();previewToolRoot.add(previewRodTool);
+  const rodMat=new THREE.MeshStandardMaterial({color:0x76502e,roughness:.78});
+  const rod=new THREE.Mesh(new THREE.CylinderGeometry(.012,.026,2.15,8),rodMat);rod.position.set(.08,.82,-.02);rod.rotation.z=-.18;rod.castShadow=true;previewRodTool.add(rod);
+  const tip=new THREE.Mesh(new THREE.SphereGeometry(.018,8,6),new THREE.MeshStandardMaterial({color:0x29251f,roughness:.7}));tip.position.set(.27,1.88,-.02);previewRodTool.add(tip);
+  const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(.27,1.88,-.02),new THREE.Vector3(.52,.25,-.12)]),new THREE.LineBasicMaterial({color:0xd8d0b8,transparent:true,opacity:.8}));previewRodTool.add(line);
+  previewAxeTool.visible=false;previewKnifeTool.visible=false;previewRodTool.visible=false;
+  previewTorchTool=new THREE.Group();previewToolRoot.add(previewTorchTool);
+  const shaftMat=new THREE.MeshStandardMaterial({color:0x65452e,roughness:.98});
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.035,.049,.62,10,3),shaftMat);shaft.position.y=.10;shaft.castShadow=true;previewTorchTool.add(shaft);
+  const bindingMat=new THREE.MeshStandardMaterial({color:0x9b805b,roughness:1});
+  for(let i=0;i<5;i++){const band=new THREE.Mesh(new THREE.TorusGeometry(.052,.009,6,14),bindingMat);band.rotation.x=Math.PI/2;band.position.y=.29+i*.035;previewTorchTool.add(band);}
+  const cloth=new THREE.Mesh(new THREE.CylinderGeometry(.068,.052,.18,9),new THREE.MeshStandardMaterial({color:0x8b7759,roughness:1}));cloth.position.y=.48;cloth.rotation.z=-.08;cloth.castShadow=true;previewTorchTool.add(cloth);
+  const resin=new THREE.Mesh(new THREE.SphereGeometry(.065,10,8),new THREE.MeshStandardMaterial({color:0x302015,roughness:.72}));resin.scale.set(1,.72,1);resin.position.y=.57;previewTorchTool.add(resin);
+  const flameMat=new THREE.MeshStandardMaterial({color:0xff7924,emissive:0xff4a0a,emissiveIntensity:3.4,roughness:.3,transparent:true,opacity:.96,side:THREE.DoubleSide,depthWrite:false});
+  previewTorchFlame=new THREE.Mesh(new THREE.ConeGeometry(.072,.32,10,4),flameMat);previewTorchFlame.position.y=.77;previewTorchFlame.rotation.z=-.09;previewTorchTool.add(previewTorchFlame);
+  previewTorchInnerFlame=new THREE.Mesh(new THREE.ConeGeometry(.033,.19,8,3),new THREE.MeshBasicMaterial({color:0xffe9a6,transparent:true,opacity:.9,side:THREE.DoubleSide,depthWrite:false}));previewTorchInnerFlame.position.set(0,.71,.008);previewTorchTool.add(previewTorchInnerFlame);
+  previewTorchLight=new THREE.PointLight(0xff9b4b,0,9,2);previewTorchLight.position.y=.77;previewTorchLight.castShadow=true;previewTorchLight.shadow.mapSize.set(isLowPowerDevice?256:512,isLowPowerDevice?256:512);previewTorchLight.shadow.bias=-.002;previewTorchTool.add(previewTorchLight);
+  for(let i=0;i<5;i++){const puff=new THREE.Mesh(new THREE.SphereGeometry(.022+i*.004,7,6),new THREE.MeshBasicMaterial({color:0x77716a,transparent:true,opacity:0,depthWrite:false}));puff.userData.phase=i*.21;previewTorchTool.add(puff);previewTorchSmoke.push(puff);}
+  previewTorchTool.scale.setScalar(.78);previewTorchTool.visible=false;
+}
 function buildHandProp(){
  clearHandProp();
  const side=$('handSide').value,sideRe=sidePattern(side),type=$('handObject').value;
  const handBone=findRig(/hand/i,side,/(thumb|index|middle|ring|pinky|finger|twist|ik|end)/i)||findRig(/wrist/i,side)||findRig(/forearm|lowerarm/i,side)||findRig(/arm$/i,side);
+ if(['axe','knife','rod','torch'].includes(type)){
+  previewRightHandBone=handBone;
+  buildGameHeldToolModels();
+  handProp=previewToolRoot;handPropBone=handBone;
+  previewAxeTool.visible=type==='axe';previewKnifeTool.visible=type==='knife';previewRodTool.visible=type==='rod';previewTorchTool.visible=type==='torch';
+  if(handBone){syncHandProp();const hw=handBone.getWorldPosition(new THREE.Vector3());controls.target.set(hw.x*.55,hw.y*.55+.25,0);camera.position.set(hw.x+1.9,hw.y+.65,3.7);controls.update();}
+  else{handPropBone=null;previewToolRoot.position.set(side==='R'?.34:-.34,1.02,.24);controls.target.set(0,1,0);camera.position.set(2.9,1.7,4.5);controls.update();}
+  return;
+ }
  const prop=new THREE.Group();handProp=prop;handPropBone=handBone;
  const wood=new THREE.MeshStandardMaterial({color:0x80552f,roughness:.9}),metal=new THREE.MeshStandardMaterial({color:0x9ba5a7,metalness:.55,roughness:.38}),dark=new THREE.MeshStandardMaterial({color:0x33271f,roughness:.95});
  const add=(geo,mat,pos,scale,rot)=>{const m=new THREE.Mesh(geo,mat);m.position.set(...pos);if(scale)m.scale.set(...scale);if(rot)m.rotation.set(...rot);m.castShadow=true;m.receiveShadow=true;prop.add(m);return m};
