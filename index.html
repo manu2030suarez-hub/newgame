@@ -1517,7 +1517,23 @@ function updateBowlWater(g,dt){
 }
 function updateStoneBowls(dt){
   if(stoneBowlHeld&&stoneBowlMesh)updateBowlWater(stoneBowlMesh,dt);
-  if(stoneBowlHeld&&stoneBowlMesh){const yaw=player.rotation.y;if(B.handL&&B.handR){B.handL.getWorldPosition(_v);B.handR.getWorldPosition(_p1);stoneBowlMesh.position.set((_v.x+_p1.x)/2+Math.sin(yaw)*BOWL_HOLD.f,(_v.y+_p1.y)/2+BOWL_HOLD.y,(_v.z+_p1.z)/2+Math.cos(yaw)*BOWL_HOLD.f);}else stoneBowlMesh.position.set(player.position.x+Math.sin(yaw)*.34,player.position.y+.95,player.position.z+Math.cos(yaw)*.34);stoneBowlMesh.rotation.set(0,yaw,0);}
+  if(stoneBowlHeld&&stoneBowlMesh){const yaw=player.rotation.y;if(B.handL&&B.handR){B.handL.getWorldPosition(_v);B.handR.getWorldPosition(_p1);stoneBowlMesh.position.set((_v.x+_p1.x)/2+Math.sin(yaw)*BOWL_HOLD.f,(_v.y+_p1.y)/2+BOWL_HOLD.y,(_v.z+_p1.z)/2+Math.cos(yaw)*BOWL_HOLD.f);}else stoneBowlMesh.position.set(player.position.x+Math.sin(yaw)*.34,player.position.y+.95,player.position.z+Math.cos(yaw)*.34);stoneBowlMesh.rotation.set(0,yaw,0);
+    // Ajustes de agarre del editor: la olla se sostiene con ambas manos, por eso combina ambos ajustes.
+    const lp=savedHandPoses['bowl_L']?.prop,rp=savedHandPoses['bowl_R']?.prop;
+    if(lp||rp){
+      const lq=B.handL?B.handL.getWorldQuaternion(new THREE.Quaternion()):new THREE.Quaternion();
+      const rq=B.handR?B.handR.getWorldQuaternion(new THREE.Quaternion()):new THREE.Quaternion();
+      const lo=lp?.position||{},ro=rp?.position||{};
+      const lv=new THREE.Vector3(lo.x||0,lo.y||0,lo.z||0).applyQuaternion(lq);
+      const rv=new THREE.Vector3(ro.x||0,ro.y||0,ro.z||0).applyQuaternion(rq);
+      const count=(lp?1:0)+(rp?1:0);
+      stoneBowlMesh.position.add(lv.add(rv).multiplyScalar(1/count));
+      const lr=lp?.rotation||{},rr=rp?.rotation||{};
+      const avg=(k)=>((Number(lr[k])||0)+(Number(rr[k])||0))/count;
+      stoneBowlMesh.quaternion.setFromEuler(new THREE.Euler(0,yaw,0)).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(avg('x')),THREE.MathUtils.degToRad(avg('y')),THREE.MathUtils.degToRad(avg('z')),'XYZ')));
+      stoneBowlMesh.scale.setScalar(((lp?.scale||1)+(rp?.scale||1))/count);
+    }else stoneBowlMesh.scale.setScalar(1);
+  }
   for(let i=stoneBowlGround.length-1;i>=0;i--){const g=stoneBowlGround[i],u=g.userData;updateBowlWater(g,dt);const wind=Math.abs(stormWind||0);u.tilt=Math.min(1.25,(u.tilt||0)+wind*.09*dt);u.tilt=Math.max(0,u.tilt-dt*.012);g.rotation.z=Math.sin(performance.now()*.0007+i)*u.tilt*.42;g.rotation.x=Math.cos(performance.now()*.0006+i)*u.tilt*.32;
     const playerHit=Math.hypot(g.position.x-player.position.x,g.position.z-player.position.z)<.52;if(playerHit&&Math.hypot(player.position.x-(u.lastPX||player.position.x),player.position.z-(u.lastPZ||player.position.z))>0.025){g.rotation.z+=.22;u.tilt+=.35;}u.lastPX=player.position.x;u.lastPZ=player.position.z;
     for(const a of (wildlife?.animals||[])){if(a.dead)continue;if(Math.hypot(g.position.x-a.root.position.x,g.position.z-a.root.position.z)<.62){if((u.milk||0)>0&&(a.hunger>35||a.thirst>35)){u.milk=Math.max(0,u.milk-.12*dt);a.hunger=Math.max(0,a.hunger-3*dt);a.thirst=Math.max(0,a.thirst-4*dt);g.rotation.z+=Math.sin(performance.now()*.01)*.001;updateBowlMilkVisual(g);if($('invMilk'))$('invMilk').textContent=`${Math.round(u.milk*100)}%`;}else{u.tilt=Math.min(1.25,(u.tilt||0)+.18);g.rotation.z+=.12;g.rotation.x+=.09;}}}
