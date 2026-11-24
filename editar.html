@@ -281,10 +281,52 @@ function buildGameHeldToolModels(){
   for(let i=0;i<5;i++){const puff=new THREE.Mesh(new THREE.SphereGeometry(.022+i*.004,7,6),new THREE.MeshBasicMaterial({color:0x77716a,transparent:true,opacity:0,depthWrite:false}));puff.userData.phase=i*.21;previewTorchTool.add(puff);previewTorchSmoke.push(puff);}
   previewTorchTool.scale.setScalar(.78);previewTorchTool.visible=false;
 }
+
+const previewTM = {
+  stoneGeo: new THREE.DodecahedronGeometry(.07, 1),
+  stoneMat: new THREE.MeshStandardMaterial({ color: 0x7d807b, roughness: .97, flatShading: true }),
+  nutGeo: new THREE.SphereGeometry(.105, 16, 12),
+  nutMat: new THREE.MeshStandardMaterial({ color: 0x6e4b33, roughness: .92 }),
+  huskGeo: new THREE.SphereGeometry(.06, 10, 8),
+  huskMat: new THREE.MeshStandardMaterial({ color: 0xa27b4d, roughness: 1 }),
+  stickGeo: new THREE.CylinderGeometry(.026, .036, .62, 8).rotateX(Math.PI / 2),   // eje largo = Z local
+  twigGeo: new THREE.CylinderGeometry(.009, .016, .17, 5).rotateX(Math.PI / 2).translate(0, 0, .085),
+  branchMat: new THREE.MeshStandardMaterial({ color: 0x684a32, roughness: 1 })
+};
+// Un único constructor de malla para suelo, mano y vuelo: el tamaño es el mismo en los tres casos.
+function createThrowableMesh(type) {
+  const g = new THREE.Group();
+  if (type === 'stone') {
+    const m = new THREE.Mesh(previewTM.stoneGeo, previewTM.stoneMat);
+    m.scale.set(1.15 + Math.random() * .15, .74 + Math.random() * .12, .9 + Math.random() * .12);
+    m.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3); m.castShadow = true; g.add(m);
+  } else if (type === 'branch') {
+    const mat = previewTM.branchMat.clone(); g.userData.mat = mat;
+    const m = new THREE.Mesh(previewTM.stickGeo, mat); m.castShadow = true; g.add(m);
+    const tg = new THREE.Group(); tg.position.set(0, .01, .06); tg.rotation.y = .75; tg.add(new THREE.Mesh(previewTM.twigGeo, mat)); g.add(tg);
+  } else {
+    const m = new THREE.Mesh(previewTM.nutGeo, previewTM.nutMat); m.scale.set(1, .9, 1); m.castShadow = true; g.add(m);
+    const h = new THREE.Mesh(previewTM.huskGeo, previewTM.huskMat); h.scale.set(.55, .32, .55); h.position.y = .085; g.add(h);
+  }
+  return g;
+}
+function createPreviewThrowableMesh(type){
+ const g=new THREE.Group();
+ if(type==='stone'){const m=new THREE.Mesh(previewTM.stoneGeo,previewTM.stoneMat);m.scale.set(1.15,.8,.95);m.castShadow=true;g.add(m);}
+ else if(type==='branch'){const mat=previewTM.branchMat.clone();g.userData.mat=mat;const m=new THREE.Mesh(previewTM.stickGeo,mat);m.castShadow=true;g.add(m);const tg=new THREE.Group();tg.position.set(0,.01,.06);tg.rotation.y=.75;tg.add(new THREE.Mesh(previewTM.twigGeo,mat));g.add(tg);}
+ else{const m=new THREE.Mesh(previewTM.nutGeo,previewTM.nutMat);m.scale.set(1,.9,1);m.castShadow=true;g.add(m);const h=new THREE.Mesh(previewTM.huskGeo,previewTM.huskMat);h.scale.set(.55,.32,.55);h.position.y=.085;g.add(h);}
+ return g;
+}
 function buildHandProp(){
  clearHandProp();
  const side=$('handSide').value,sideRe=sidePattern(side),type=$('handObject').value;
  const handBone=findRig(/hand/i,side,/(thumb|index|middle|ring|pinky|finger|twist|ik|end)/i)||findRig(/wrist/i,side)||findRig(/forearm|lowerarm/i,side)||findRig(/arm$/i,side);
+ if(['stone','branch','coconut'].includes(type)){
+  handProp=createPreviewThrowableMesh(type==='coconut'?'coconut':type);handPropBone=handBone;scene.add(handProp);
+  if(handBone){syncHandProp();const hw=handBone.getWorldPosition(new THREE.Vector3());controls.target.set(hw.x*.55,hw.y*.55+.25,0);camera.position.set(hw.x+1.9,hw.y+.65,3.7);controls.update();}
+  else{handPropBone=null;handProp.position.set(side==='R'?.34:-.34,1.02,.24);controls.target.set(0,1,0);camera.position.set(2.9,1.7,4.5);controls.update();}
+  return;
+ }
  if(['axe','knife','rod','torch'].includes(type)){
   previewRightHandBone=handBone;
   buildGameHeldToolModels();
