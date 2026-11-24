@@ -2474,11 +2474,13 @@ function updateHeldFish(dt, time) {
     const live = clamp(rec.alive / 6, 0, 1);
     r.position.set(_hp.x + fx * .22 - lx * sg * .05, _hp.y + .06 + Math.sin(time * 19) * .012 * live, _hp.z + fz * .22 - lz * sg * .05);
     r.rotation.set(-.16, ry - sg * .38 + Math.sin(time * 13) * .18 * live, Math.sin(time * 17) * .22 * live);
+    const fishPose=savedHandPoses[`fish_${H}`],fishTransform=fishPose?.prop;
+    if(fishTransform){const hq=bone.getWorldQuaternion(new THREE.Quaternion()),off=fishTransform.position||{},rot=fishTransform.rotation||{};r.position.add(new THREE.Vector3(off.x||0,off.y||0,off.z||0).applyQuaternion(hq));r.quaternion.copy(hq).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(rot.x||0),THREE.MathUtils.degToRad(rot.y||0),THREE.MathUtils.degToRad(rot.z||0),'XYZ')));r.scale.setScalar(fishTransform.scale||1);}
     v.setSwim(time * 20, .1 + 1.3 * live); if (v.update) v.update(dt);
   }
   if(heldOpenCoconutSlot&&heldOpenCoconutMesh){
     const H=heldOpenCoconutSlot,bone=B['hand'+H];
-    if(bone){bone.updateWorldMatrix(true,false);bone.getWorldPosition(_hp);const ry=player.rotation.y,sg=H==='L'?1:-1;heldOpenCoconutMesh.position.set(_hp.x+Math.sin(ry)*.20-Math.cos(ry)*sg*.08,_hp.y+.045,_hp.z+Math.cos(ry)*.20+Math.sin(ry)*sg*.08);heldOpenCoconutMesh.rotation.set(-.18,ry-sg*.25,sg*.14);}
+    if(bone){bone.updateWorldMatrix(true,false);bone.getWorldPosition(_hp);const ry=player.rotation.y,sg=H==='L'?1:-1;heldOpenCoconutMesh.position.set(_hp.x+Math.sin(ry)*.20-Math.cos(ry)*sg*.08,_hp.y+.045,_hp.z+Math.cos(ry)*.20+Math.sin(ry)*sg*.08);heldOpenCoconutMesh.rotation.set(-.18,ry-sg*.25,sg*.14);const rec=savedHandPoses[`coconut_${H}`],tr=rec?.prop;if(tr){const hq=bone.getWorldQuaternion(new THREE.Quaternion()),off=tr.position||{},rot=tr.rotation||{};heldOpenCoconutMesh.position.add(new THREE.Vector3(off.x||0,off.y||0,off.z||0).applyQuaternion(hq));heldOpenCoconutMesh.quaternion.copy(hq).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(rot.x||0),THREE.MathUtils.degToRad(rot.y||0),THREE.MathUtils.degToRad(rot.z||0),'XYZ')));heldOpenCoconutMesh.scale.setScalar(tr.scale||1);}}
   }
 }
 // Brazos flexionados para llevar un pez (cada mano por separado)
