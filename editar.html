@@ -146,11 +146,11 @@ function setRigPose(kind,phase=1){
  }
 }
 function createPresetFrames(kind){
- const phases=kind==='sit'?[0,.45,1,1]:[0,.32,.72,1,1];
- const times=kind==='sit'?[0,.65,1.25,2.0]:[0,.28,.72,1.25,1.9];
+ const phases=kind==='sit'?[0,.45,1,1,.5,0]:[0,.32,.72,1,1];
+ const times=kind==='sit'?[0,.65,1.25,2.0,2.6,3.1]:[0,.28,.72,1.25,1.9];
  frames=[];duration=times[times.length-1];
  phases.forEach((phase,i)=>{setRigPose(kind,phase);frames.push({t:times[i],pose:snapshot()})});
- if(kind==='fall'){setRigPose('recover',.55);frames.push({t:2.35,pose:snapshot()});duration=2.35}
+ if(kind==='fall'){setRigPose('recover',1);frames.push({t:2.35,pose:snapshot()});setRest();frames.push({t:2.9,pose:snapshot()});duration=2.9}
  setRest();frames.sort((a,b)=>a.t-b.t);$('duration').value=duration;$('timeline').max=duration;$('timeValue').max=duration;resetToFrame(0);renderFrames();
 }
 function selectClip(clip){selectedClip=clip;$('clipName').value=clip.name;stopPreview();const saved=animationEdits[clip.name];if(saved?.frames){frames=saved.frames;duration=saved.duration||clip.duration||2;frames.sort((a,b)=>a.t-b.t);resetToFrame(0)}else if(clip.preset){createPresetFrames(clip.preset)}else{frames=[];duration=Math.max(.1,clip.duration);$('duration').value=duration} $('duration').value=duration;$('timeline').max=duration;$('timeValue').max=duration;renderFrames();document.querySelectorAll('.anim').forEach(x=>x.classList.toggle('selected',x.dataset.name===clip.name));status('Seleccionada: '+clip.name+'. Podés editar sus claves en el visor 3D.')}
@@ -190,8 +190,15 @@ function buildHandProp(){
  else if(type==='fish'||type==='cookedFish'){const mat=new THREE.MeshStandardMaterial({color:type==='fish'?0x9baeb1:0xb77d45,roughness:.7});add(new THREE.SphereGeometry(.16,20,14),mat,[0,.13,0],[.62,.62,1.55]);add(new THREE.ConeGeometry(.075,.16,10),mat,[0,.13,-.27],[1,1,1],[Math.PI/2,0,0]);}
  else if(type==='meat'){add(new THREE.SphereGeometry(.14,16,12),new THREE.MeshStandardMaterial({color:0x9c4b3e,roughness:.85}),[0,.12,0],[1.25,.8,.85]);}
  else {add(new THREE.CylinderGeometry(.14,.11,.14,24,1,true),new THREE.MeshStandardMaterial({color:0x92948a,roughness:.9,side:THREE.DoubleSide}),[0,.08,0]);add(new THREE.TorusGeometry(.12,.012,8,24),metal,[0,.15,0]);}
- if(handBone){handBone.add(prop);prop.position.set(0,0,.10);prop.rotation.set(Math.PI/2,0,0);}
- else {character.add(prop);prop.position.set(side==='R'?.30:-.30,1.05,.20);status('No se detectó el hueso de la mano; el objeto se muestra junto al personaje para que puedas verlo.');}
+ if(handBone){
+   handBone.add(prop);prop.position.set(0,.015,.10);prop.rotation.set(Math.PI/2,0,0);
+   character.updateMatrixWorld(true);const handWorld=new THREE.Vector3();handBone.getWorldPosition(handWorld);
+   controls.target.copy(handWorld);camera.position.copy(handWorld).add(new THREE.Vector3(side==='R'?1.05:-1.05,.48,2.25));controls.update();
+ } else {
+   character.add(prop);prop.position.set(side==='R'?.34:-.34,1.02,.24);
+   controls.target.set(side==='R'?.34:-.34,1.02,0);camera.position.set(side==='R'?1.4:-1.4,1.55,2.7);controls.update();
+   status('No se detectó el hueso de la mano: el objeto se muestra junto al personaje como vista previa.');
+ }
  if(type==='rod'){
    const target=prop;
    handPropLoader.load('./fishing-rod.glb',gltf=>{
