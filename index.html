@@ -230,6 +230,7 @@ const player = new THREE.Group(); scene.add(player);   // el "frente" del jugado
 let physics=null, wildlife=null, worldInitialized=false;
 let character = null, mixer = null, actions = {}, currentAction = null, walkClip = null, runClip = null;
 let loaded = false, gameStarted = false, firstPerson = false, soundOn = true;
+let savedHandPoses = {};
 let mapRefresh=0, wasInWater=false, waterExitTrail=false, footprintTimer=0;
 let mapMarker=null, pendingFishPickup=null, backpackHoldAt=0, backpackWasLong=false, gameOver=false, boatHitCooldown=0, fireContactCooldown=0, resourceHoldTimer=null, resourceHoldConsumed=false;
 const footprints=[]; let footprintGeo=null, footprintMat=null, footprintSide=1;
@@ -520,6 +521,7 @@ loader.load(MODEL_PATH, gltf => {
       catch (clipError) { console.warn('No se pudo cargar una animación editada:', clipError); }
     }
   } catch (storageError) { console.warn('No se pudieron leer las animaciones guardadas:', storageError); }
+  try { savedHandPoses = JSON.parse(localStorage.getItem('survivalPlaya.handPoses.v1') || '{}'); } catch (e) { savedHandPoses = {}; }
   walkClip = actions.walk ? 'walk' : null; runClip = actions.run ? 'run' : null;
 
   // Huesos para el salto procedural
@@ -3809,6 +3811,12 @@ function update(dt, time) {
   applyHoldArms();
   applyTorchCarryPose();
   applyTorchIgnitionPose(time);
+  // Poses de agarre creadas en editar.html: se aplican sobre el brazo/mano del objeto equipado.
+  const gripPose = savedHandPoses[`${activeTool}_R`];
+  if (gripPose) for (const bone of bones) {
+    if (!/(right|[_.\\-:|]r([_.\\-:|]|$))/i.test(bone.name) || !/(arm|forearm|hand|thumb|index|middle|ring|pinky|finger)/i.test(bone.name)) continue;
+    const q = gripPose[bone.name]; if (q && q.length === 4) bone.quaternion.fromArray(q);
+  }
   if(toolAction==='fist'){const pu=Math.sin(Math.PI*clamp(toolActionT/.5,0,1));rw(B.uarmR,1.15*pu);rw(B.farmR,.5*pu);}
   if(toolAction&&toolAction!=='fist'){const wt=toolActionT<.26?smooth(toolActionT/.26):1-smooth((toolActionT-.26)/.36);if(B.uarmR)rw(B.uarmR,-.58*wt);if(B.farmR)rw(B.farmR,.34*wt);}
 
