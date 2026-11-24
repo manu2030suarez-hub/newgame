@@ -317,7 +317,7 @@ function createPreviewThrowableMesh(type){
   const m=new THREE.Mesh(previewTM.stoneGeo,previewTM.stoneMat);
   m.scale.set(1.15+Math.random()*.15,.74+Math.random()*.12,.9+Math.random()*.12);
   m.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);m.castShadow=true;g.add(m);
- }else if(type==='branch){
+ }else if(type==='branch'){
   const mat=previewTM.branchMat.clone();g.userData.mat=mat;
   const m=new THREE.Mesh(previewTM.stickGeo,mat);m.castShadow=true;g.add(m);
   const twig=new THREE.Group();twig.position.set(0,.01,.06);twig.rotation.y=.75;twig.add(new THREE.Mesh(previewTM.twigGeo,mat));g.add(twig);
