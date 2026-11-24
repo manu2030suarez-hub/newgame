@@ -66,7 +66,7 @@ export function createSharkSystem(THREERef, scene, beach, options = {}) {
       s.tail.rotation.y=Math.sin(time*7+s.phase)*.48;
       s.body.rotation.z=Math.sin(time*3.2+s.phase)*.045;
       s.body.position.y=Math.sin(time*4.2+s.phase)*.055;
-      s.root.visible=s.root.position.z<beach.shoreZ(s.root.position.x)-3;
+      s.root.visible=s.root.position.z<beach.shoreZ(s.root.position.x)-.7;
       if(hunting && dist<2.45 && s.attackCooldown<=0 && globalAttackCooldown<=0){
         s.attackCooldown=5.5;globalAttackCooldown=2.2;s.attackBlend=.32;
         options.damagePlayer?.(17,'¡Un tiburón te mordió! ¡Nada hacia la orilla para escapar!');
