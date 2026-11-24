@@ -562,6 +562,12 @@ function createAbandonedHouses(scene, wallMeshes) {
         addPart(g,'upper-side-wall',sx*w/2,upperY+h/2,0,t,h,d,plaster,true);
         addPart(g,'upper-side-window',sx*(w/2-.08),upperY+1.55,0,.035,.9,1.15,glass);
       }
+      // Fachada del segundo piso: paneles separados alrededor de una ventana.
+      addPart(g,'upper-front-left',-2.55,upperY+h/2,-d/2,3.1,h,t,plaster,true);
+      addPart(g,'upper-front-right',2.55,upperY+h/2,-d/2,3.1,h,t,plaster,true);
+      addPart(g,'upper-front-under-window',0,upperY+.82,-d/2,1.15,1.45,t,plaster,true);
+      addPart(g,'upper-front-over-window',0,upperY+2.78,-d/2,1.15,.74,t,plaster,true);
+      addPart(g,'upper-front-window',0,upperY+1.95,-d/2-.07,1.0,.9,.035,glass);
       for(const pz of [-d/2,d/2]){
         addPart(g,'upper-rear-wall-left',-2.55,upperY+h/2,pz,3.1,h,t,plaster,true);
         addPart(g,'upper-rear-wall-right',2.55,upperY+h/2,pz,3.1,h,t,plaster,true);
