@@ -131,7 +131,26 @@ $('timeline').oninput=()=>{const t=Number($('timeline').value);$('timeValue').va
 $('timeValue').onchange=()=>{$('timeline').value=$('timeValue').value;$('timeline').dispatchEvent(new Event('input'))};
 $('saveAnim').onclick=saveAnimation;$('downloadAnim').onclick=()=>download('survival-playa-animaciones.json',JSON.stringify(animationEdits,null,2));
 function selectedHandBones(){const side=$('handSide').value==='R'?'Right':'Left';return bones.filter(b=>new RegExp(side,'i').test(b.name)&&/(arm|forearm|hand|thumb|index|middle|ring|pinky|finger|wrist)/i.test(b.name))}
-function loadPose(){const key=$('handObject').value+'_'+$('handSide').value;const data=handPoses[key];setRest();if(data)applySnapshot(data);const opts=selectedHandBones();$('handBoneSelect').innerHTML='';opts.forEach(b=>{const o=document.createElement('option');o.value=b.name;o.textContent=boneLabel(b);$('handBoneSelect').appendChild(o)});const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b);status(data?'Pose guardada cargada: '+key:'Pose base del modelo. Ajustala y guardala como '+key+'.')}
+let handProp=null;
+function buildHandProp(){
+ if(handProp){handProp.parent?.remove(handProp);handProp=null}
+ const side=$('handSide').value, boneName=selectedHandBones().find(b=>/hand/i.test(b.name))?.name;
+ const handBone=boneByName.get(boneName);if(!handBone)return;
+ const type=$('handObject').value, prop=new THREE.Group();
+ const wood=new THREE.MeshStandardMaterial({color:0x795333,roughness:.9}),metal=new THREE.MeshStandardMaterial({color:0x8d999b,metalness:.55,roughness:.42}),dark=new THREE.MeshStandardMaterial({color:0x35271e,roughness:.95}),fruit=new THREE.MeshStandardMaterial({color:0x6d8c3d,roughness:.85});
+ const add=(geo,mat,pos,scale)=>{const m=new THREE.Mesh(geo,mat);m.position.set(...pos);if(scale)m.scale.set(...scale);m.castShadow=true;prop.add(m)};
+ if(type==='axe'){add(new THREE.CylinderGeometry(.018,.024,.42,10),wood,[0,.16,0]);add(new THREE.BoxGeometry(.17,.12,.045),metal,[.07,.34,0]);}
+ else if(type==='knife'){add(new THREE.CylinderGeometry(.018,.02,.16,10),dark,[0,.06,0]);add(new THREE.BoxGeometry(.035,.18,.012),metal,[0,.22,0]);}
+ else if(type==='rod'){add(new THREE.CylinderGeometry(.009,.014,.86,8),wood,[0,.43,0]);}
+ else if(type==='torch'){add(new THREE.CylinderGeometry(.025,.035,.32,10),wood,[0,.15,0]);add(new THREE.ConeGeometry(.055,.14,10),new THREE.MeshStandardMaterial({color:0xff9b32,emissive:0xff4b08,emissiveIntensity:1.2}),[0,.39,0]);}
+ else if(type==='stone'){add(new THREE.DodecahedronGeometry(.105,1),new THREE.MeshStandardMaterial({color:0x888b86,roughness:1}),[0,.09,0]);}
+ else if(type==='branch'){add(new THREE.CylinderGeometry(.018,.026,.44,7),wood,[0,.2,0]);}
+ else if(type==='coconut'){add(new THREE.SphereGeometry(.105,16,12),new THREE.MeshStandardMaterial({color:0x725039,roughness:1}),[0,.1,0],[1,.92,1]);}
+ else if(type==='fish'){add(new THREE.SphereGeometry(.13,18,12),new THREE.MeshStandardMaterial({color:0x9aa8a4,roughness:.65}),[0,.1,0],[.65,.7,1.6]);}
+ else {add(new THREE.CylinderGeometry(.13,.1,.12,20,1,true),new THREE.MeshStandardMaterial({color:0x85877f,roughness:.95,side:THREE.DoubleSide}),[0,.08,0]);}
+ prop.position.set(0,.015,.075);prop.rotation.x=Math.PI/2;handBone.add(prop);handProp=prop;
+}
+function loadPose(){const key=$('handObject').value+'_'+$('handSide').value;const data=handPoses[key];setRest();if(data)applySnapshot(data);const opts=selectedHandBones();$('handBoneSelect').innerHTML='';opts.forEach(b=>{const o=document.createElement('option');o.value=b.name;o.textContent=boneLabel(b);$('handBoneSelect').appendChild(o)});const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b);buildHandProp();status(data?'Pose guardada cargada: '+key:'Pose base del modelo. Ajustala y guardala como '+key+'.')}
 $('handSide').onchange=loadPose;$('handObject').onchange=loadPose;$('handBoneSelect').onchange=()=>{const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b)};
 sliders($('handSliders'),$('handBoneSelect'));
 $('loadHandPose').onclick=loadPose;
