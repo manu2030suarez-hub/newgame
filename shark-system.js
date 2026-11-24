@@ -29,6 +29,8 @@ export function createSharkSystem(THREERef, scene, beach, options = {}) {
     const tail=new T.Group(); tail.position.set(0,0,-1.58); body.add(tail);
     makeMesh(tail,finGeo,finMat,[0,0,-.18],[1,1,1]).rotation.y=Math.PI;
     const dorsal=makeMesh(body,finGeo,finMat,[0,.32,-.2],[.72,.9,1]); dorsal.rotation.y=Math.PI;
+    const jaw=new T.Group(); jaw.position.set(0,-.19,1.68); body.add(jaw);
+    makeMesh(jaw,sphere,bellyMat,[0,-.05,.12],[.27,.075,.25]);
     for(const side of [-1,1]){
       const pectoral=makeMesh(body,finGeo,finMat,[side*.36,-.12,.05],[.78,.55,1]);
       pectoral.rotation.z=side*.55; pectoral.rotation.y=side*.95;
@@ -36,7 +38,7 @@ export function createSharkSystem(THREERef, scene, beach, options = {}) {
       makeMesh(body,sphere,mouthMat,[side*.02,-.22,1.83],[.20,.035,.12]);
     }
     root.position.set(x,-.72,z);
-    return {id,root,body,tail,phase,x,z,heading:Math.PI,attackCooldown:3+id*1.7,attackBlend:0,patrol:0};
+    return {id,root,body,tail,jaw,phase,x,z,heading:Math.PI,attackCooldown:3+id*1.7,attackBlend:0,patrol:0};
   }
   const positions=[[-112,24],[-42,34],[34,27],[112,38]];
   positions.forEach((p,i)=>sharks.push(makeShark(i,p[0],beach.shoreZ(p[0])-p[1],i*1.8)));
@@ -66,6 +68,9 @@ export function createSharkSystem(THREERef, scene, beach, options = {}) {
       s.tail.rotation.y=Math.sin(time*7+s.phase)*.48;
       s.body.rotation.z=Math.sin(time*3.2+s.phase)*.045;
       s.body.position.y=Math.sin(time*4.2+s.phase)*.055;
+      const bite=s.attackBlend>0?Math.sin((.32-s.attackBlend)/.32*Math.PI):0;
+      s.body.position.z=bite*.72;
+      s.jaw.rotation.x=bite*.52;
       s.root.visible=s.root.position.z<beach.shoreZ(s.root.position.x)-.7;
       if(hunting && dist<2.45 && s.attackCooldown<=0 && globalAttackCooldown<=0){
         s.attackCooldown=5.5;globalAttackCooldown=2.2;s.attackBlend=.32;
