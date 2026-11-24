@@ -487,6 +487,113 @@ function createShipwreck(scene, opts = {}) {
   return group;
 }
 
+
+function createAbandonedHouses(scene, wallMeshes) {
+  const wood = new THREE.MeshStandardMaterial({ color: 0x594332, roughness: .94 });
+  const fadedWood = new THREE.MeshStandardMaterial({ color: 0x806448, roughness: .92 });
+  const darkWood = new THREE.MeshStandardMaterial({ color: 0x30271f, roughness: .98 });
+  const plaster = new THREE.MeshStandardMaterial({ color: 0x9a8d72, roughness: 1 });
+  const roofMat = new THREE.MeshStandardMaterial({ color: 0x45423a, roughness: .96, side: THREE.DoubleSide });
+  const glass = new THREE.MeshStandardMaterial({ color: 0x344b50, roughness: .3, metalness: .12, transparent: true, opacity: .42 });
+  const houses = [];
+  const boxGeo = new THREE.BoxGeometry(1,1,1);
+  const addPart = (g, name, x,y,z, sx,sy,sz, mat, collision=false) => {
+    const m = new THREE.Mesh(boxGeo,mat); m.name=name; m.position.set(x,y,z); m.scale.set(sx,sy,sz);
+    m.castShadow=true; m.receiveShadow=true; g.add(m); if(collision) wallMeshes.push(m); return m;
+  };
+  const buildHouse = (x,z, twoFloors, seed) => {
+    const rnd = mulberry32(seed), g = new THREE.Group(); g.name = twoFloors ? 'abandoned-two-storey-house' : 'abandoned-coastal-house';
+    const w=8.2, d=7.2, floorY=.22, h=3.15, t=.22;
+    g.position.set(x,terrainH(x,z)+.035,z);
+    const yaw=(rnd()-.5)*.28; g.rotation.y=yaw;
+    // Cada elemento es una pieza separada: cimientos, tablas, postes, marcos y cubierta.
+    addPart(g,'foundation',0,.10,0,w+.35,.24,d+.35,darkWood);
+    for(let row=0;row<Math.ceil(d/.55);row++){
+      const zz=-d/2+.28+row*.55;
+      addPart(g,'floor-plank',0,floorY,zz,w,.12,.49,row%3===0?fadedWood:wood);
+    }
+    const postH=twoFloors?6.1:h;
+    for(const px of [-w/2+.12,w/2-.12]) for(const pz of [-d/2+.12,d/2-.12])
+      addPart(g,'structural-post',px,floorY+postH/2,pz,.24,postH,.24,darkWood);
+    // Pared frontal con puerta abierta y marco independiente.
+    const doorW=1.45, doorH=2.25, sideW=(w-doorW)/2;
+    addPart(g,'front-wall-left',-w/2/2-doorW/4,floorY+h/2,-d/2,w/2-doorW/2,h,t,plaster,true);
+    addPart(g,'front-wall-right',w/2/2+doorW/4,floorY+h/2,-d/2,w/2-doorW/2,h,t,plaster,true);
+    addPart(g,'front-door-lintel',0,floorY+doorH+(h-doorH)/2,-d/2,w-doorW,h-doorH,t,plaster,true);
+    addPart(g,'door-frame-left',-doorW/2,floorY+doorH/2,-d/2-.06,.12,doorH,.16,fadedWood);
+    addPart(g,'door-frame-right',doorW/2,floorY+doorH/2,-d/2-.06,.12,doorH,.16,fadedWood);
+    addPart(g,'door-frame-top',0,floorY+doorH,-d/2-.06,doorW,.13,.16,fadedWood);
+    // Pared trasera en paneles independientes con una ventana.
+    const winW=1.35, winH=1.05, winY=floorY+1.45, winZ=d/2;
+    for(const side of [-1,1]) addPart(g,'rear-wall-side',side*(w/2-winW/4),floorY+h/2,winZ,w/2-winW/2,h,t,plaster,true);
+    addPart(g,'rear-wall-under-window',0,floorY+(winY-floorY-winH/2)/2,winZ,winW,winY-floorY-winH/2,t,plaster,true);
+    addPart(g,'rear-wall-over-window',0,winY+winH/2+(floorY+h-winY-winH/2)/2,winZ,winW,floorY+h-winY-winH/2-winH/2,t,plaster,true);
+    addPart(g,'rear-window-glass',0,winY,winZ-.08,winW-.12,winH-.12,.035,glass);
+    for(const sx of [-1,1]){
+      // Laterales: dos tramos de pared y una abertura de ventana por lado.
+      addPart(g,'side-wall-front',sx*w/2,floorY+h/2,-d/4,t,h,d/2-.8,plaster,true);
+      addPart(g,'side-wall-rear',sx*w/2,floorY+h/2,d/4,t,h,d/2-.8,plaster,true);
+      addPart(g,'side-window-sill',sx*w/2,floorY+1.0,0,t,.16,1.0,fadedWood);
+      addPart(g,'side-window-header',sx*w/2,floorY+2.0,0,t,.16,1.0,fadedWood);
+      addPart(g,'side-window-glass',sx*(w/2-.08),floorY+1.5,0,.035,.86,.82,glass);
+    }
+    // Revestimiento exterior de madera, tablas rotas y clavos visuales.
+    for(let side=0;side<4;side++) for(let k=0;k<11;k++){
+      const u=(k/10-.5)*(side%2===0?w:d), y=floorY+.28+(k%4)*.68;
+      const px=side===0?u:side===1?u:side===2?-w/2:w/2;
+      const pz=side===0?-d/2:side===1?d/2: u;
+      if(side===0 && Math.abs(px)<doorW*.62) continue;
+      if(side===1 && Math.abs(px)<winW*.7 && y>winY-.65 && y<winY+.7) continue;
+      if(side>1 && Math.abs(pz)<.62 && y>floorY+1.0 && y<floorY+2.05) continue;
+      const plank=addPart(g,'weathered-siding',px,y,pz,side<2?.11:.11,.10,.10,k%2?fadedWood:wood);
+      if(side<2) plank.scale.set(.12,.11,.18); else plank.scale.set(.18,.11,.12);
+    }
+    // Marco y puerta colgando de una bisagra; queda entornada para poder entrar.
+    const door = new THREE.Group(); door.position.set(-doorW/2,floorY,-d/2-.11); door.rotation.y=-.18; g.add(door);
+    addPart(door,'old-wooden-door',doorW/2,doorH/2,0,doorW,doorH,.12,wood);
+    for(let k=0;k<5;k++) addPart(door,'door-board',.15+k*.29,doorH/2,.07,.25,doorH-.12,.035,fadedWood);
+    // Ventanas con postigos torcidos.
+    for(const sx of [-1,1]) addPart(g,'broken-shutter',sx*(w/2+.025),floorY+1.5,.62,.12,.95,.68,wood);
+    if(twoFloors){
+      const upperY=floorY+h;
+      for(let row=0;row<Math.ceil(d/.55);row++) addPart(g,'upper-floor-plank',0,upperY,-d/2+.28+row*.55,w,.13,.49,row%2?wood:fadedWood);
+      // Segundo nivel con paredes partidas y huecos de ventanas.
+      for(const sx of [-1,1]){
+        addPart(g,'upper-side-wall',sx*w/2,upperY+h/2,0,t,h,d,plaster,true);
+        addPart(g,'upper-side-window',sx*(w/2-.08),upperY+1.55,0,.035,.9,1.15,glass);
+      }
+      for(const pz of [-d/2,d/2]){
+        addPart(g,'upper-rear-wall-left',-2.55,upperY+h/2,pz,3.1,h,t,plaster,true);
+        addPart(g,'upper-rear-wall-right',2.55,upperY+h/2,pz,3.1,h,t,plaster,true);
+        addPart(g,'upper-window',0,upperY+1.6,pz-.05,1.15,.95,.035,glass);
+      }
+      // Escalera exterior funcional visualmente, con peldaños separados.
+      for(let k=0;k<10;k++){
+        const q=k/9; addPart(g,'stair-step',-w/2-1.05+q*1.9,floorY+.18+k*.31,-d/2+1.1,.95,.16,1.0,wood);
+      }
+      addPart(g,'upper-balcony',0,upperY+.12,-d/2-1.0,3.0,.22,2.0,wood);
+      addPart(g,'balcony-rail',0,upperY+1.0,-d/2-1.85,3.0,.12,.12,darkWood);
+    }
+    // Vigas y techo inclinado en tablas individuales, con huecos por deterioro.
+    const roofY=floorY+(twoFloors?6.1:3.15), roofW=w+1.0, roofD=d+1.0;
+    for(const side of [-1,1]){
+      const roof = addPart(g,'roof-panel',side*1.95,roofY+.85,0,roofW/2+.2,.16,roofD,roofMat);
+      roof.rotation.z=side*.34;
+      for(let k=0;k<9;k++){
+        if((k+seed)%11===0 || (k+seed)%17===0) continue;
+        const board=addPart(g,'separate-roof-board',side*1.95,roofY+.94,(k/8-.5)*roofD,roofW/2,.09,.72,k%2?darkWood:wood);
+        board.rotation.z=side*.34;
+      }
+    }
+    // Restos de vigas expuestas.
+    for(let k=0;k<5;k++) addPart(g,'exposed-rafter',-w/2+k*w/4,roofY+.25,-d/2-.25,.14,.18,d+.5,darkWood);
+    g.updateMatrixWorld(true); scene.add(g); houses.push(g);
+  };
+  const sites=[[-104,shoreZ(-104)+34,false,31],[-59,shoreZ(-59)+43,true,47],[-8,shoreZ(-8)+31,false,63],[48,shoreZ(48)+42,true,89]];
+  for(const [x,z,two,seed] of sites) buildHouse(x,z,two,seed);
+  return houses;
+}
+
 function create(scene, renderer, opts = {}) {
   const sun = opts.sun || null, hemi = opts.hemi || null;
   const aniso = renderer.capabilities?.getMaxAnisotropy?.() || 4;
@@ -617,7 +724,9 @@ function create(scene, renderer, opts = {}) {
   };
   const colliders = [];
   const rockMeshes = [];
+  const houseWallMeshes = [];
   const wreckWalkableMeshes = [];
+  const houses = createAbandonedHouses(scene, houseWallMeshes);
   const shipwreckGroup = createShipwreck(scene, {
     x: 12,
     z: shoreZ(12) + 1.5,
@@ -1005,20 +1114,20 @@ function create(scene, renderer, opts = {}) {
     const sz = shoreZ(p.x) + SWIM; if (p.z < sz) p.z = sz;
     let sweptRockHit=false;
     const R_BODY = 0.42;
-    if(previous && rockMeshes.length){
+    if(previous && (rockMeshes.length || houseWallMeshes.length)){
       const dx=p.x-previous.x,dz=p.z-previous.z,dist=Math.hypot(dx,dz);
       if(dist>.0001 && dist < 12){
         rockMoveDir.set(dx/dist,0,dz/dist);
         for(const h of [.25,.65,1.10,1.55]){
           rockMoveOrigin.set(previous.x,p.y+h,previous.z);
           rockSideRaycaster.set(rockMoveOrigin,rockMoveDir);rockSideRaycaster.near=0;rockSideRaycaster.far=dist+R_BODY;
-          const hits=rockSideRaycaster.intersectObjects(rockMeshes,false);
+          const hits=rockSideRaycaster.intersectObjects([...rockMeshes,...houseWallMeshes],false);
           const hit=hits.find(v=>{const n=v.face?v.face.normal.clone().transformDirection(v.object.matrixWorld):null;return n&&Math.abs(n.y)<.82;});
           if(hit){const allowed=Math.max(0,hit.distance-R_BODY-.01);p.x=previous.x+rockMoveDir.x*allowed;p.z=previous.z+rockMoveDir.z*allowed;sweptRockHit=true;break;}
         }
       }
     }
-    if (rockMeshes.length) {
+    if (rockMeshes.length || houseWallMeshes.length) {
       for (let iter = 0; iter < 2; iter++) {
         for (let a = 0; a < 8; a++) {
           const ang = (a / 8) * Math.PI * 2;
@@ -1026,7 +1135,7 @@ function create(scene, renderer, opts = {}) {
           rockMoveOrigin.set(p.x, p.y + 0.85, p.z);
           rockSideRaycaster.set(rockMoveOrigin, rockMoveDir);
           rockSideRaycaster.near = 0; rockSideRaycaster.far = R_BODY;
-          const hits = rockSideRaycaster.intersectObjects(rockMeshes, false);
+          const hits = rockSideRaycaster.intersectObjects([...rockMeshes,...houseWallMeshes], false);
           const hit = hits.find(v => {
             const n = v.face ? v.face.normal.clone().transformDirection(v.object.matrixWorld) : null;
             return n && Math.abs(n.y) < 0.82;
@@ -1094,7 +1203,7 @@ function create(scene, renderer, opts = {}) {
   }
 
   function consumeWaveImpact(){const v=waveImpactPending;waveImpactPending=null;return v;}
-  const api = { sunDir, rockMeshes, wreckWalkableMeshes, shipwreckGroup, isInsideCave: null, heightAt: terrainH, surfaceHeightAt, surfaceInfoAt, rockTopAt, shoreZ, constrain, update, consumeWaveImpact, startAudio, setMuted, colliders, harvestPalms, grassPatches: grassList, fellPalm, terrain, water, dome };
+  const api = { sunDir, houses, houseWallMeshes, rockMeshes, wreckWalkableMeshes, shipwreckGroup, isInsideCave: null, heightAt: terrainH, surfaceHeightAt, surfaceInfoAt, rockTopAt, shoreZ, constrain, update, consumeWaveImpact, startAudio, setMuted, colliders, harvestPalms, grassPatches: grassList, fellPalm, terrain, water, dome };
   return api;
 }
 
