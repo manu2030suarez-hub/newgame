@@ -3848,8 +3848,8 @@ function update(dt, time) {
   applyTorchCarryPose();
   applyTorchIgnitionPose(time);
   // Poses de agarre creadas en editar.html: se aplican sobre el brazo/mano del objeto equipado.
-  const rightGripKey = activeTool !== 'fist' ? activeTool : (hands.R?.kind === 'gull' ? 'fish' : hands.R?.kind || heldThrowables.R?.type || (heldOpenCoconutSlot === 'R' ? 'coconut' : ''));
-  const leftGripKey = hands.L?.kind === 'gull' ? 'fish' : (hands.L?.kind || heldThrowables.L?.type || (heldOpenCoconutSlot === 'L' ? 'coconut' : ''));
+  const rightGripKey = stoneBowlHeld ? 'bowl' : (activeTool !== 'fist' ? activeTool : (hands.R?.kind === 'gull' ? 'fish' : hands.R?.kind || heldThrowables.R?.type || (heldOpenCoconutSlot === 'R' ? 'coconut' : '')));
+  const leftGripKey = stoneBowlHeld ? 'bowl' : (hands.L?.kind === 'gull' ? 'fish' : (hands.L?.kind || heldThrowables.L?.type || (heldOpenCoconutSlot === 'L' ? 'coconut' : '')));
   for (const [side, key] of [['R', rightGripKey], ['L', leftGripKey]]) {
     const gripRecord = key ? savedHandPoses[`${key}_${side}`] : null;
     const gripPose = gripRecord?.bones || gripRecord;
