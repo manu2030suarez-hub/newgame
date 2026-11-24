@@ -3812,10 +3812,15 @@ function update(dt, time) {
   applyTorchCarryPose();
   applyTorchIgnitionPose(time);
   // Poses de agarre creadas en editar.html: se aplican sobre el brazo/mano del objeto equipado.
-  const gripPose = savedHandPoses[`${activeTool}_R`];
-  if (gripPose) for (const bone of bones) {
-    if (!RIGHT.test(bone.name) || !/(arm|forearm|hand|thumb|index|middle|ring|pinky|finger)/i.test(bone.name)) continue;
-    const q = gripPose[bone.name]; if (q && q.length === 4) bone.quaternion.fromArray(q);
+  const rightGripKey = activeTool !== 'fist' ? activeTool : (hands.R?.kind === 'gull' ? 'fish' : hands.R?.kind || heldThrowables.R?.type || (heldOpenCoconutSlot === 'R' ? 'coconut' : ''));
+  const leftGripKey = hands.L?.kind === 'gull' ? 'fish' : (hands.L?.kind || heldThrowables.L?.type || (heldOpenCoconutSlot === 'L' ? 'coconut' : ''));
+  for (const [side, key] of [['R', rightGripKey], ['L', leftGripKey]]) {
+    const gripPose = key ? savedHandPoses[`${key}_${side}`] : null, sideTest = side === 'R' ? RIGHT : LEFT;
+    if (!gripPose) continue;
+    for (const bone of bones) {
+      if (!sideTest.test(bone.name) || !/(arm|forearm|hand|thumb|index|middle|ring|pinky|finger)/i.test(bone.name)) continue;
+      const q = gripPose[bone.name]; if (q && q.length === 4) bone.quaternion.fromArray(q);
+    }
   }
   if(toolAction==='fist'){const pu=Math.sin(Math.PI*clamp(toolActionT/.5,0,1));rw(B.uarmR,1.15*pu);rw(B.farmR,.5*pu);}
   if(toolAction&&toolAction!=='fist'){const wt=toolActionT<.26?smooth(toolActionT/.26):1-smooth((toolActionT-.26)/.36);if(B.uarmR)rw(B.uarmR,-.58*wt);if(B.farmR)rw(B.farmR,.34*wt);}
