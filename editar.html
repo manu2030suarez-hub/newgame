@@ -44,7 +44,7 @@ input[type=range]{width:100%;accent-color:#91c69a}.sliderline{display:grid;grid-
  </div>
  <div id="handListPane" class="hidden">
   <h2>Poses de manos por objeto</h2><p class="hint">Ajustá brazo, antebrazo, muñeca y dedos para la forma de sujetar cada objeto.</p>
-  <label>Objeto que sostiene</label><select id="handObject"><option value="axe">Hacha</option><option value="knife">Cuchillo</option><option value="rod">Caña de pescar</option><option value="torch">Antorcha</option><option value="stone">Piedra</option><option value="branch">Rama</option><option value="coconut">Coco</option><option value="fish">Pescado</option><option value="bowl">Cuenco</option></select>
+  <label>Objeto que sostiene</label><select id="handObject"><option value="axe">Hacha</option><option value="knife">Cuchillo</option><option value="rod">Caña de pescar</option><option value="torch">Antorcha</option><option value="stone">Piedra</option><option value="branch">Rama</option><option value="coconut">Coco</option><option value="fish">Pescado</option><option value="bowl">Cuenco</option><option value="wood">Madera</option><option value="meat">Carne cruda</option><option value="cookedFish">Pescado cocido</option><option value="openCoconut">Coco abierto</option></select>
   <label>Mano a editar</label><select id="handSide"><option value="R">Derecha</option><option value="L">Izquierda</option></select>
   <button class="primary" id="loadHandPose" style="width:100%;margin-top:10px">Cargar pose guardada</button>
   <p class="hint">Los controles de la derecha modifican los huesos de la mano seleccionada. Podés guardar una pose distinta para cada objeto y mano.</p>
@@ -130,25 +130,38 @@ $('duration').onchange=()=>{duration=Math.max(.1,Number($('duration').value)||1)
 $('timeline').oninput=()=>{const t=Number($('timeline').value);$('timeValue').value=t;if(frames.length)resetToFrame(t);else if(selectedClip&&mixer){stopPreview();const a=mixer.clipAction(selectedClip);a.play();a.paused=true;a.time=t;a.getMixer().update(0)}const b=boneByName.get($('boneSelect').value);if(b)syncSliders($('boneSliders'),b)};
 $('timeValue').onchange=()=>{$('timeline').value=$('timeValue').value;$('timeline').dispatchEvent(new Event('input'))};
 $('saveAnim').onclick=saveAnimation;$('downloadAnim').onclick=()=>download('survival-playa-animaciones.json',JSON.stringify(animationEdits,null,2));
-function selectedHandBones(){const side=$('handSide').value==='R'?'Right':'Left';return bones.filter(b=>new RegExp(side,'i').test(b.name)&&/(arm|forearm|hand|thumb|index|middle|ring|pinky|finger|wrist)/i.test(b.name))}
-let handProp=null;
+function selectedHandBones(){const side=$('handSide').value==='R'?/(right|[_.\\-:|]r([_.\\-:|]|$))/i:/(left|[_.\\-:|]l([_.\\-:|]|$))/i;return bones.filter(b=>side.test(b.name)&&/(arm|forearm|hand|thumb|index|middle|ring|pinky|finger|wrist)/i.test(b.name))}
+let handProp=null, handPropAnchor=null;
+const handPropLoader=new GLTFLoader();
 function buildHandProp(){
  if(handProp){handProp.parent?.remove(handProp);handProp=null}
- const side=$('handSide').value, boneName=selectedHandBones().find(b=>/hand/i.test(b.name))?.name;
- const handBone=boneByName.get(boneName);if(!handBone)return;
- const type=$('handObject').value, prop=new THREE.Group();
- const wood=new THREE.MeshStandardMaterial({color:0x795333,roughness:.9}),metal=new THREE.MeshStandardMaterial({color:0x8d999b,metalness:.55,roughness:.42}),dark=new THREE.MeshStandardMaterial({color:0x35271e,roughness:.95}),fruit=new THREE.MeshStandardMaterial({color:0x6d8c3d,roughness:.85});
- const add=(geo,mat,pos,scale)=>{const m=new THREE.Mesh(geo,mat);m.position.set(...pos);if(scale)m.scale.set(...scale);m.castShadow=true;prop.add(m)};
- if(type==='axe'){add(new THREE.CylinderGeometry(.018,.024,.42,10),wood,[0,.16,0]);add(new THREE.BoxGeometry(.17,.12,.045),metal,[.07,.34,0]);}
- else if(type==='knife'){add(new THREE.CylinderGeometry(.018,.02,.16,10),dark,[0,.06,0]);add(new THREE.BoxGeometry(.035,.18,.012),metal,[0,.22,0]);}
- else if(type==='rod'){add(new THREE.CylinderGeometry(.009,.014,.86,8),wood,[0,.43,0]);}
- else if(type==='torch'){add(new THREE.CylinderGeometry(.025,.035,.32,10),wood,[0,.15,0]);add(new THREE.ConeGeometry(.055,.14,10),new THREE.MeshStandardMaterial({color:0xff9b32,emissive:0xff4b08,emissiveIntensity:1.2}),[0,.39,0]);}
- else if(type==='stone'){add(new THREE.DodecahedronGeometry(.105,1),new THREE.MeshStandardMaterial({color:0x888b86,roughness:1}),[0,.09,0]);}
- else if(type==='branch'){add(new THREE.CylinderGeometry(.018,.026,.44,7),wood,[0,.2,0]);}
- else if(type==='coconut'){add(new THREE.SphereGeometry(.105,16,12),new THREE.MeshStandardMaterial({color:0x725039,roughness:1}),[0,.1,0],[1,.92,1]);}
- else if(type==='fish'){add(new THREE.SphereGeometry(.13,18,12),new THREE.MeshStandardMaterial({color:0x9aa8a4,roughness:.65}),[0,.1,0],[.65,.7,1.6]);}
- else {add(new THREE.CylinderGeometry(.13,.1,.12,20,1,true),new THREE.MeshStandardMaterial({color:0x85877f,roughness:.95,side:THREE.DoubleSide}),[0,.08,0]);}
- prop.position.set(0,.015,.075);prop.rotation.x=Math.PI/2;handBone.add(prop);handProp=prop;
+ const side=$('handSide').value, sideRe=side==='R'?/(right|[_.\\-:|]r([_.\\-:|]|$))/i:/(left|[_.\\-:|]l([_.\\-:|]|$))/i;
+ const handBone=bones.find(b=>sideRe.test(b.name)&&/hand/i.test(b.name)&&!/(thumb|index|middle|ring|pinky|finger|twist|ik)/i.test(b.name))
+   || bones.find(b=>sideRe.test(b.name)&&/wrist/i.test(b.name));
+ const type=$('handObject').value, prop=new THREE.Group();handProp=prop;handPropAnchor=handBone||character;
+ const wood=new THREE.MeshStandardMaterial({color:0x80552f,roughness:.9}),metal=new THREE.MeshStandardMaterial({color:0x9ba5a7,metalness:.55,roughness:.38}),dark=new THREE.MeshStandardMaterial({color:0x33271f,roughness:.95}),green=new THREE.MeshStandardMaterial({color:0x65843d,roughness:.85}),skin=new THREE.MeshStandardMaterial({color:0xc18b68,roughness:.8});
+ const add=(geo,mat,pos,scale,rot)=>{const m=new THREE.Mesh(geo,mat);m.position.set(...pos);if(scale)m.scale.set(...scale);if(rot)m.rotation.set(...rot);m.castShadow=true;m.receiveShadow=true;prop.add(m);return m};
+ if(type==='axe'){add(new THREE.CylinderGeometry(.018,.026,.58,12),wood,[0,.20,0]);add(new THREE.BoxGeometry(.22,.14,.055),metal,[.075,.47,0]);add(new THREE.BoxGeometry(.025,.13,.07),dark,[-.045,.43,0]);}
+ else if(type==='knife'){add(new THREE.CylinderGeometry(.022,.025,.20,12),dark,[0,.07,0]);add(new THREE.BoxGeometry(.045,.24,.018),metal,[0,.28,0]);}
+ else if(type==='rod'){add(new THREE.CylinderGeometry(.009,.015,1.05,10),wood,[0,.48,0]);add(new THREE.TorusGeometry(.022,.004,6,12),metal,[0,.22,0],[1,1,1],[0,0,0]);}
+ else if(type==='torch'){add(new THREE.CylinderGeometry(.028,.04,.42,12),wood,[0,.19,0]);add(new THREE.CylinderGeometry(.045,.052,.10,12),dark,[0,.40,0]);add(new THREE.ConeGeometry(.07,.19,12),new THREE.MeshStandardMaterial({color:0xff9b32,emissive:0xff4b08,emissiveIntensity:1.3}),[0,.54,0]);}
+ else if(type==='stone'){add(new THREE.DodecahedronGeometry(.14,1),new THREE.MeshStandardMaterial({color:0x858984,roughness:1}),[0,.10,0],[1,.82,1.12]);}
+ else if(type==='branch'||type==='wood'){add(new THREE.CylinderGeometry(.025,.04,.62,9),wood,[0,.28,0]);if(type==='branch'){add(new THREE.CylinderGeometry(.012,.02,.25,7),wood,[.07,.30,0],[1,1,1],[0,0,-.8]);}}
+ else if(type==='coconut'||type==='openCoconut'){add(new THREE.SphereGeometry(.14,20,16),new THREE.MeshStandardMaterial({color:type==='coconut'?0x765039:0xd9c7a0,roughness:1}),[0,.12,0],[1,.92,1]);if(type==='openCoconut')add(new THREE.CylinderGeometry(.105,.105,.012,20),new THREE.MeshStandardMaterial({color:0xf0e1c0,roughness:.9}),[0,.23,0]);}
+ else if(type==='fish'||type==='cookedFish'){const mat=new THREE.MeshStandardMaterial({color:type==='fish'?0x9baeb1:0xb77d45,roughness:.7});add(new THREE.SphereGeometry(.16,20,14),mat,[0,.13,0],[.62,.62,1.55]);add(new THREE.ConeGeometry(.075,.16,10),mat,[0,.13,-.27],[1,1,1],[Math.PI/2,0,0]);}
+ else if(type==='meat'){add(new THREE.SphereGeometry(.14,16,12),new THREE.MeshStandardMaterial({color:0x9c4b3e,roughness:.85}),[0,.12,0],[1.25,.8,.85]);}
+ else {add(new THREE.CylinderGeometry(.14,.11,.14,24,1,true),new THREE.MeshStandardMaterial({color:0x92948a,roughness:.9,side:THREE.DoubleSide}),[0,.08,0]);add(new THREE.TorusGeometry(.12,.012,8,24),metal,[0,.15,0]);}
+ if(handBone){handBone.add(prop);prop.position.set(0,0,.10);prop.rotation.set(Math.PI/2,0,0);}
+ else {character.add(prop);prop.position.set(side==='R'?.30:-.30,1.05,.20);status('No se detectó el hueso de la mano; el objeto se muestra junto al personaje para que puedas verlo.');}
+ if(type==='rod'){
+   const target=prop;
+   handPropLoader.load('./fishing-rod.glb',gltf=>{
+     if(handProp!==target||$('handObject').value!=='rod')return;
+     while(target.children.length)target.remove(target.children[0]);
+     const model=gltf.scene;model.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3()),max=Math.max(size.x,size.y,size.z)||1;
+     model.scale.setScalar(.95/max);model.updateMatrixWorld(true);const centered=new THREE.Box3().setFromObject(model),center=centered.getCenter(new THREE.Vector3());model.position.sub(center);target.add(model);
+   },undefined,()=>{});
+ }
 }
 function loadPose(){const key=$('handObject').value+'_'+$('handSide').value;const data=handPoses[key];setRest();if(data)applySnapshot(data);const opts=selectedHandBones();$('handBoneSelect').innerHTML='';opts.forEach(b=>{const o=document.createElement('option');o.value=b.name;o.textContent=boneLabel(b);$('handBoneSelect').appendChild(o)});const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b);buildHandProp();status(data?'Pose guardada cargada: '+key:'Pose base del modelo. Ajustala y guardala como '+key+'.')}
 $('handSide').onchange=loadPose;$('handObject').onchange=loadPose;$('handBoneSelect').onchange=()=>{const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b)};
