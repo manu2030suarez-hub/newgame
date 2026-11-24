@@ -77,7 +77,13 @@ input[type=range]{width:100%;accent-color:#91c69a}.sliderline{display:grid;grid-
   <h2>Ajuste de agarre</h2>
   <label>Hueso</label><select id="handBoneSelect"></select>
   <div id="handSliders"></div>
-  <div class="hint">Consejo: rotá primero el brazo y antebrazo; después ajustá muñeca y dedos para cerrar el agarre alrededor del objeto.</div>
+  <h3>Posición del objeto en la mano</h3>
+  <p class="hint">Estos controles mueven el objeto respecto de la palma, sin cambiar la pose de los dedos. Profundidad acerca o aleja el objeto de la mano.</p>
+  <div id="propPositionControls"></div>
+  <h3>Orientación del objeto</h3><div id="propRotationControls"></div>
+  <h3>Tamaño</h3><div id="propScaleControls"></div>
+  <button id="resetPropTransform" style="width:100%;margin-top:10px">Restablecer posición y orientación</button>
+  <div class="hint">Después ajustá los huesos de brazo, muñeca y dedos para cerrar el agarre alrededor del objeto.</div>
   <button id="downloadPose" style="width:100%">Exportar poses .json</button>
  </div>
 </section>
@@ -175,6 +181,8 @@ function selectedHandBones(){
  return bones.filter(b=>sideRe.test(b.name)&&/(arm|forearm|hand|thumb|index|middle|ring|pinky|finger|wrist)/i.test(b.name));
 }
 let handProp=null,propShowcase=null,handPropBone=null,handPropOffsetQ=new THREE.Quaternion();
+const defaultPropTransform={position:{x:0,y:-.015,z:.075},rotation:{x:90,y:0,z:0},scale:1};
+let propTransform=JSON.parse(JSON.stringify(defaultPropTransform));
 const handPropLoader=new GLTFLoader();
 const showcaseBase=new THREE.Mesh(new THREE.CylinderGeometry(.34,.42,.12,32),new THREE.MeshStandardMaterial({color:0x4b5948,roughness:.9}));
 showcaseBase.position.set(1.35,.035,0);showcaseBase.castShadow=true;showcaseBase.receiveShadow=true;scene.add(showcaseBase);
@@ -205,8 +213,9 @@ function syncHandProp(){
  if(!handProp||!handPropBone)return;
  character.updateMatrixWorld(true);
  const p=handPropBone.getWorldPosition(new THREE.Vector3()),q=handPropBone.getWorldQuaternion(new THREE.Quaternion());
- const offset=new THREE.Vector3(0,-.015,.075).applyQuaternion(q);
- handProp.position.copy(p).add(offset);handProp.quaternion.copy(q).multiply(handPropOffsetQ);handProp.scale.setScalar(1);
+ const offset=new THREE.Vector3(propTransform.position.x,propTransform.position.y,propTransform.position.z).applyQuaternion(q);
+ const localRotation=new THREE.Euler(THREE.MathUtils.degToRad(propTransform.rotation.x),THREE.MathUtils.degToRad(propTransform.rotation.y),THREE.MathUtils.degToRad(propTransform.rotation.z),'XYZ');
+ handProp.position.copy(p).add(offset);handProp.quaternion.copy(q).multiply(new THREE.Quaternion().setFromEuler(localRotation));handProp.scale.setScalar(propTransform.scale);
 }
 function buildHandProp(){
  clearHandProp();
@@ -225,7 +234,7 @@ function buildHandProp(){
  else if(type==='fish'||type==='cookedFish'){const mat=new THREE.MeshStandardMaterial({color:type==='fish'?0x9baeb1:0xb77d45,roughness:.7});add(new THREE.SphereGeometry(.16,20,14),mat,[0,.13,0],[.62,.62,1.55]);add(new THREE.ConeGeometry(.075,.16,10),mat,[0,.13,-.27],[1,1,1],[Math.PI/2,0,0]);}
  else if(type==='meat'){add(new THREE.SphereGeometry(.14,16,12),new THREE.MeshStandardMaterial({color:0x9c4b3e,roughness:.85}),[0,.12,0],[1.25,.8,.85]);}
  else{add(new THREE.CylinderGeometry(.14,.11,.14,24,1,true),new THREE.MeshStandardMaterial({color:0x92948a,roughness:.9,side:THREE.DoubleSide}),[0,.08,0]);add(new THREE.TorusGeometry(.12,.012,8,24),metal,[0,.15,0]);}
- handPropOffsetQ.setFromEuler(new THREE.Euler(Math.PI/2,0,0));
+ propTransform=JSON.parse(JSON.stringify(defaultPropTransform));
  scene.add(prop);prop.visible=true;
  // Segundo ejemplar en pedestal: permite comparar el agarre con la forma completa del objeto.
  propShowcase=prop.clone(true);propShowcase.position.set(1.35,.42,0);propShowcase.quaternion.setFromEuler(new THREE.Euler(0,0,Math.PI/7));propShowcase.scale.setScalar(.72);scene.add(propShowcase);
@@ -242,18 +251,23 @@ function buildHandProp(){
  else{handPropBone=null;prop.position.set(side==='R'?.34:-.34,1.02,.24);controls.target.set(0,1,0);camera.position.set(2.9,1.7,4.5);controls.update();status('No se detectó el hueso de la mano; el objeto queda visible junto al personaje y en el pedestal.')}
 }
 function loadPose(){
- const key=$('handObject').value+'_'+$('handSide').value,data=handPoses[key];
- if(data){setRest();applySnapshot(data)}else applyDefaultGrip($('handSide').value);
+ const key=$('handObject').value+'_'+$('handSide').value,data=handPoses[key],boneData=data?.bones||data;
+ if(data){setRest();applySnapshot(boneData);propTransform={...JSON.parse(JSON.stringify(defaultPropTransform)),...(data.prop||{}),position:{...defaultPropTransform.position,...(data.prop?.position||{})},rotation:{...defaultPropTransform.rotation,...(data.prop?.rotation||{})}}}else{applyDefaultGrip($('handSide').value);propTransform=JSON.parse(JSON.stringify(defaultPropTransform))}
  const opts=selectedHandBones();$('handBoneSelect').innerHTML='';
  opts.forEach(b=>{const o=document.createElement('option');o.value=b.name;o.textContent=boneLabel(b);$('handBoneSelect').appendChild(o)});
  const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b);
- buildHandProp();syncHandProp();
- status(data?'Pose guardada cargada: '+key:'Agarre base aplicado. Ajustá brazo, mano y dedos; el objeto se muestra en la mano y en el pedestal.');
+ buildHandProp();renderPropTransformControls();syncHandProp();
+ status(data?'Pose guardada cargada: '+key:'Agarre base aplicado. Ajustá la posición del objeto y la forma de la mano.');
 }
+function renderPropTransformControls(){
+ const groups=[['propPositionControls','position',[['x','Desplazamiento lateral',-.3,.3,.005],['y','Altura sobre la palma',-.3,.3,.005],['z','Profundidad (adelante / atrás)',-.4,.4,.005]]],['propRotationControls','rotation',[['x','Giro X',-180,180,1],['y','Giro Y',-180,180,1],['z','Giro Z',-180,180,1]]],['propScaleControls','scale',[['scale','Tamaño del objeto',.2,2.5,.01]]]];
+ for(const [container,key,fields] of groups){const root=$(container);root.innerHTML='';for(const [axis,label,min,max,step] of fields){const wrap=document.createElement('div');wrap.innerHTML='<label>'+label+'</label><div class="sliderline"><input type="range" min="'+min+'" max="'+max+'" step="'+step+'" data-prop-group="'+key+'" data-prop-axis="'+axis+'"><output></output></div>';const input=wrap.querySelector('input'),out=wrap.querySelector('output');const read=()=>key==='scale'?propTransform.scale:propTransform[key][axis];const update=()=>{const value=read();input.value=value;out.textContent=key==='rotation'?Math.round(value)+'°':Number(value).toFixed(key==='scale'?2:3)};input.addEventListener('input',()=>{const v=Number(input.value);if(key==='scale')propTransform.scale=v;else propTransform[key][axis]=v;update();syncHandProp()});update();root.appendChild(wrap)}}
+}
+$('resetPropTransform').onclick=()=>{propTransform=JSON.parse(JSON.stringify(defaultPropTransform));renderPropTransformControls();syncHandProp();status('Posición, profundidad, orientación y tamaño restablecidos.')};
 $('handSide').onchange=loadPose;$('handObject').onchange=loadPose;$('handBoneSelect').onchange=()=>{const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b)};
 sliders($('handSliders'),$('handBoneSelect'));
 $('loadHandPose').onclick=loadPose;
-$('savePose').onclick=()=>{const key=$('handObject').value+'_'+$('handSide').value;handPoses[key]=snapshot();localStorage.setItem(poseStoreKey,JSON.stringify(handPoses));status('Pose '+key+' guardada en este navegador.')};
+$('savePose').onclick=()=>{const key=$('handObject').value+'_'+$('handSide').value;handPoses[key]={bones:snapshot(),prop:JSON.parse(JSON.stringify(propTransform))};localStorage.setItem(poseStoreKey,JSON.stringify(handPoses));status('Pose y ajuste del objeto '+key+' guardados en este navegador.')};
 $('resetPose').onclick=()=>{applyDefaultGrip($('handSide').value);const b=boneByName.get($('handBoneSelect').value);if(b)syncSliders($('handSliders'),b);syncHandProp();status('Agarre base del juego restablecido.')};
 $('downloadPose').onclick=()=>download('survival-playa-poses-manos.json',JSON.stringify(handPoses,null,2));
 function switchMode(next){mode=next;$('tabAnim').classList.toggle('active',next==='anim');$('tabHands').classList.toggle('active',next==='hands');$('animListPane').classList.toggle('hidden',next!=='anim');$('handListPane').classList.toggle('hidden',next!=='hands');$('animControls').classList.toggle('hidden',next!=='anim');$('handControls').classList.toggle('hidden',next!=='hands');$('animToolbar').classList.toggle('hidden',next!=='anim');$('handToolbar').classList.toggle('hidden',next!=='hands');if(next==='hands')loadPose();else if(selectedClip)selectClip(selectedClip)}
