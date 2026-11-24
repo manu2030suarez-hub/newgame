@@ -739,11 +739,10 @@ function updateHeldTool(dt=0){
   if(torchTool){torchTool.visible=activeTool==='torch'&&torchOwned;torchTool.rotation.set(.08,0,-.12);torchTool.scale.setScalar(.78);const burning=torchTool.visible&&torchLit&&torchFuel>0;torchFlame.visible=burning;torchInnerFlame.visible=burning;torchLight.intensity=burning?2.15+.30*Math.sin(performance.now()*.019)+.15*Math.sin(performance.now()*.037):0;torchLight.visible=burning;torchFlame.scale.set(1+.10*Math.sin(performance.now()*.021),.9+.16*Math.sin(performance.now()*.026),1+.08*Math.cos(performance.now()*.019));torchFlame.rotation.z=-.09+Math.sin(performance.now()*.013)*.10;torchInnerFlame.scale.y=.88+.18*Math.sin(performance.now()*.03);for(const puff of torchSmoke){const phase=(performance.now()*.00065+puff.userData.phase)%1;puff.visible=burning;puff.position.set(Math.sin(phase*8+puff.userData.phase)*.025,.88+phase*.26,Math.cos(phase*7+puff.userData.phase)*.02);puff.scale.setScalar(.45+phase*1.3);puff.material.opacity=burning?.16*(1-phase):0;}}
   axeTool.rotation.set(.12,0,-.16);knifeTool.rotation.set(.08,0,.04);
   if(toolAction){
-    toolActionT+=dt;const t=clamp(toolActionT/.62,0,1);
-    const wind=t<.42?smooth(t/.42):1-smooth((t-.42)/.58);
-    const swing=toolAction==='axe' ? -1.55*wind : -1.05*wind;
-    if(activeTool==='axe')axeTool.rotation.x+=swing;else knifeTool.rotation.x+=swing;
-    if(t>=1){toolAction=null;toolActionT=0;toolImpactDone=false;}
+    // El objeto permanece rígido respecto de la mano: el golpe lo hace el brazo,
+    // no una rotación artificial del hacha/cuchillo sobre su propio eje.
+    toolActionT+=dt;
+    if(toolActionT>=.62){toolAction=null;toolActionT=0;toolImpactDone=false;}
   }
   // Transformación guardada desde el editor: se aplica al grupo REAL del objeto, no a una copia.
   const savedToolPose = savedHandPoses[`${activeTool}_R`];
