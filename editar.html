@@ -150,7 +150,7 @@ function applyGameFallPose(mode,w,f){
 }
 function createGameFrames(kind){
  buildRigMap();frames=[];
- if(kind==='gameSit'){duration=1.65;[0,.2,.4,.6,.8,1].forEach(v=>{applyGameSitPose(v);character.rotation.set(0,0,0);character.position.y=characterRestY-.28*v;frames.push({t:duration*v,pose:snapshot(),root:{rotation:[0,0,0],y:character.position.y}})})}
+ if(kind==='gameSit'){duration=1.65;[0,.2,.4,.6,.8,1].forEach(v=>{applyGameSitPose(v);character.rotation.set(0,0,0);character.position.y=characterRestY-.64*v;frames.push({t:duration*v,pose:snapshot(),root:{rotation:[0,0,0],y:character.position.y}})})}
  else{duration=2.75;[[0,'fall',.15,.15,0,0],[.35,'fall',.48,.48,.48,.34],[.72,'fall',1,1,1.12,.92],[1.05,'fall',1,1,1.42,1.12],[1.4,'recover',1,1,1.52,1.12],[1.85,'recover',.68,1,1.05,.72],[2.3,'recover',.28,.55,.38,.24],[2.75,'recover',0,0,0,0]].forEach(([t,m,w,f,rx,rz])=>{applyGameFallPose(m,w,f);character.rotation.set(rx,0,rz);character.position.y=characterRestY;frames.push({t,pose:snapshot(),root:{rotation:[rx,0,rz],y:characterRestY}})})}
  setRest();$('duration').value=duration;$('timeline').max=duration;$('timeValue').max=duration;resetToFrame(0);renderFrames();
 }
