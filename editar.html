@@ -114,10 +114,49 @@ function makeFrame(t){const pose=snapshot();const old=frames.findIndex(f=>Math.a
 function renderFrames(){$('keyframes').innerHTML='';frames.forEach((f,i)=>{const b=document.createElement('button');b.textContent='◆ '+f.t.toFixed(2)+' s';b.onclick=()=>{playing=false;resetToFrame(f.t);$('timeline').value=f.t;$('timeValue').value=f.t;syncSliders($('boneSliders'),boneByName.get($('boneSelect').value));};$('keyframes').appendChild(b)})}
 function clipFromFrames(){const tracks=[];for(const bone of bones){const vals=frames.filter(f=>f.pose[bone.name]);if(vals.length<2)continue;const times=vals.map(f=>f.t),values=vals.flatMap(f=>f.pose[bone.name]);tracks.push(new THREE.QuaternionKeyframeTrack(bone.name+'.quaternion',times,values))}return new THREE.AnimationClip($('clipName').value||'custom',Math.max(.1,duration),tracks)}
 function stopPreview(){playing=false;if(mixer) mixer.stopAllAction();setRest()}
-function selectClip(clip){selectedClip=clip;$('clipName').value=clip.name;stopPreview();const saved=animationEdits[clip.name];if(saved?.frames){frames=saved.frames;duration=saved.duration||clip.duration;frames.sort((a,b)=>a.t-b.t);resetToFrame(0)}else{frames=[];duration=Math.max(.1,clip.duration);$('duration').value=duration} $('duration').value=duration;$('timeline').max=duration;$('timeValue').max=duration;renderFrames();document.querySelectorAll('.anim').forEach(x=>x.classList.toggle('selected',x.dataset.name===clip.name));status('Seleccionada: '+clip.name+'. Pulsá Iniciar edición para crear claves.')}
-function buildList(){const list=$('animList');list.innerHTML='';clips.forEach(clip=>{const row=document.createElement('div');row.className='anim';row.dataset.name=clip.name;const info=document.createElement('div');info.innerHTML='<strong>'+clip.name+'</strong><small>'+clip.duration.toFixed(2)+' segundos · '+clip.tracks.length+' pistas</small>';const pencil=document.createElement('button');pencil.className='pencil';pencil.title='Editar animación';pencil.textContent='✎';pencil.onclick=()=>selectClip(clip);row.append(info,pencil);row.ondblclick=()=>selectClip(clip);list.appendChild(row)})}
-function startEditing(){if(!selectedClip)return;stopPreview();frames=[];duration=Math.max(.1,selectedClip.duration);$('duration').value=duration;$('timeline').max=duration;$('timeValue').max=duration;setRest();makeFrame(0);status('Edición iniciada. Ajustá huesos y agregá claves en distintos tiempos.')}
-function playOriginal(){if(!selectedClip||!mixer)return;stopPreview();playMode='original';const action=mixer.clipAction(selectedClip);action.reset();action.setLoop(THREE.LoopRepeat);action.play();playing=true;last=performance.now()/1000;status('Reproduciendo clip original: '+selectedClip.name)}
+function rigBone(key){
+ const side=key.endsWith('L')?/(left|[_.\\-:|]l([_.\\-:|]|$))/i:key.endsWith('R')?/(right|[_.\\-:|]r([_.\\-:|]|$))/i:null;
+ const patterns={spineLow:/spine0?1$/i,spineHigh:/spine0?2$/i,head:/head/i,thigh:/thigh|upleg|upperleg/i,calf:/calf|shin|lowerleg/i,foot:/foot/i,uarm:/upperarm|upper_arm|(left|right)arm$/i,farm:/forearm|lowerarm/i};
+ const k=key.replace(/[LR]$/,'');const re=patterns[k];return re?bones.filter(b=>re.test(b.name)&&(!side||side.test(b.name))&&!/(twist|roll|helper|ik)/i.test(b.name)).sort((a,b)=>a.name.length-b.name.length)[0]:null;
+}
+function rotateBone(key,angle,axis='x'){const b=rigBone(key);if(!b)return;const e=new THREE.Euler().setFromQuaternion(b.quaternion,'XYZ');e[axis]+=angle;b.quaternion.setFromEuler(e)}
+function setRigPose(kind,phase=1){
+ setRest();
+ const mix=(a,b)=>a+(b-a)*phase;
+ if(kind==='sit'){
+  rotateBone('thighL',mix(0,1.95));rotateBone('calfL',mix(0,-2.15));
+  rotateBone('thighR',mix(0,1.36));rotateBone('calfR',mix(0,-.14));
+  rotateBone('footL',mix(0,.30));rotateBone('spineLow',mix(0,.28));rotateBone('spineHigh',mix(0,.30));
+  rotateBone('head',mix(0,-.06));
+  rotateBone('uarmL',mix(0,.55));rotateBone('farmL',mix(0,-.35));
+  rotateBone('uarmR',mix(0,.45));rotateBone('farmR',mix(0,-.25));
+ } else if(kind==='fall'){
+  rotateBone('spineLow',mix(0,-.10));rotateBone('spineHigh',mix(0,-.14));
+  rotateBone('uarmL',mix(0,1.75));rotateBone('uarmR',mix(0,1.75));
+  rotateBone('farmL',mix(0,-.55));rotateBone('farmR',mix(0,-.55));
+  rotateBone('thighL',mix(0,.10));rotateBone('thighR',mix(0,-.06));
+  rotateBone('calfL',mix(0,-.30));rotateBone('calfR',mix(0,-.55));
+  rotateBone('head',mix(0,.45));
+ } else if(kind==='recover'){
+  rotateBone('spineLow',mix(-.10,.15));rotateBone('spineHigh',mix(-.14,.08));
+  rotateBone('uarmL',mix(1.75,.25));rotateBone('uarmR',mix(1.75,.25));
+  rotateBone('farmL',mix(-.55,-.15));rotateBone('farmR',mix(-.55,-.15));
+  rotateBone('thighL',mix(.85,.05));rotateBone('thighR',mix(.55,-.03));
+  rotateBone('calfL',mix(-1.25,0));rotateBone('calfR',mix(-1.70,0));
+ }
+}
+function createPresetFrames(kind){
+ const phases=kind==='sit'?[0,.45,1,1]:[0,.32,.72,1,1];
+ const times=kind==='sit'?[0,.65,1.25,2.0]:[0,.28,.72,1.25,1.9];
+ frames=[];duration=times[times.length-1];
+ phases.forEach((phase,i)=>{setRigPose(kind,phase);frames.push({t:times[i],pose:snapshot()})});
+ if(kind==='fall'){setRigPose('recover',.55);frames.push({t:2.35,pose:snapshot()});duration=2.35}
+ setRest();frames.sort((a,b)=>a.t-b.t);$('duration').value=duration;$('timeline').max=duration;$('timeValue').max=duration;resetToFrame(0);renderFrames();
+}
+function selectClip(clip){selectedClip=clip;$('clipName').value=clip.name;stopPreview();const saved=animationEdits[clip.name];if(saved?.frames){frames=saved.frames;duration=saved.duration||clip.duration||2;frames.sort((a,b)=>a.t-b.t);resetToFrame(0)}else if(clip.preset){createPresetFrames(clip.preset)}else{frames=[];duration=Math.max(.1,clip.duration);$('duration').value=duration} $('duration').value=duration;$('timeline').max=duration;$('timeValue').max=duration;renderFrames();document.querySelectorAll('.anim').forEach(x=>x.classList.toggle('selected',x.dataset.name===clip.name));status('Seleccionada: '+clip.name+'. Podés editar sus claves en el visor 3D.')}
+function buildList(){const list=$('animList');list.innerHTML='';const all=[...clips,{name:'Sentarse y levantarse',duration:2,tracks:[],preset:'sit'},{name:'Caerse y recuperarse',duration:2.35,tracks:[],preset:'fall'}];all.forEach(clip=>{const row=document.createElement('div');row.className='anim';row.dataset.name=clip.name;const info=document.createElement('div');info.innerHTML='<strong>'+clip.name+'</strong><small>'+(clip.preset?(clip.preset==='sit'?'Pose procedural · sentarse / levantarse':'Pose procedural · caída / recuperación'):clip.duration.toFixed(2)+' segundos · '+clip.tracks.length+' pistas')+'</small>';const pencil=document.createElement('button');pencil.className='pencil';pencil.title='Editar animación';pencil.textContent='✎';pencil.onclick=()=>selectClip(clip);row.append(info,pencil);row.ondblclick=()=>selectClip(clip);list.appendChild(row)})}
+function startEditing(){if(!selectedClip)return;stopPreview();if(selectedClip.preset&&!animationEdits[selectedClip.name]?.frames){createPresetFrames(selectedClip.preset)}else if(!frames.length){frames=[];duration=Math.max(.1,selectedClip.duration||1);setRest();makeFrame(0)}status('Edición iniciada. Ajustá huesos y agregá claves en distintos tiempos.')}
+function playOriginal(){if(selectedClip?.preset){playEdited();return}if(!selectedClip||!mixer)return;stopPreview();playMode='original';const action=mixer.clipAction(selectedClip);action.reset();action.setLoop(THREE.LoopRepeat);action.play();playing=true;last=performance.now()/1000;status('Reproduciendo clip original: '+selectedClip.name)}
 function playEdited(){if(frames.length<2){status('Agregá al menos dos claves para reproducir.');return}stopPreview();playMode='edited';playing=true;playStart=performance.now()/1000;last=playStart;status('Reproduciendo animación editada.');}
 function saveAnimation(){if(!selectedClip){status('Elegí una animación primero.');return}$('clipName').value=selectedClip.name;const clip=clipFromFrames();const data={name:clip.name,duration,frames,clip:clip.toJSON(),savedAt:new Date().toISOString()};animationEdits[selectedClip.name]=data;localStorage.setItem(animStoreKey,JSON.stringify(animationEdits));download('survival-playa-animaciones.json',JSON.stringify(animationEdits,null,2));status('Animación guardada en este navegador y exportada.')}
 function download(name,data){const a=document.createElement('a'),url=URL.createObjectURL(new Blob([data],{type:'application/json'}));a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}
