@@ -115,7 +115,7 @@ function renderFrames(){$('keyframes').innerHTML='';frames.forEach((f,i)=>{const
 function clipFromFrames(){const tracks=[];for(const bone of bones){const vals=frames.filter(f=>f.pose[bone.name]);if(vals.length<2)continue;const times=vals.map(f=>f.t),values=vals.flatMap(f=>f.pose[bone.name]);tracks.push(new THREE.QuaternionKeyframeTrack(bone.name+'.quaternion',times,values))}return new THREE.AnimationClip($('clipName').value||'custom',Math.max(.1,duration),tracks)}
 function stopPreview(){playing=false;if(mixer) mixer.stopAllAction();setRest()}
 function rigBone(key){
- const side=key.endsWith('L')?/(left|[_.\\-:|]l([_.\\-:|]|$))/i:key.endsWith('R')?/(right|[_.\\-:|]r([_.\\-:|]|$))/i:null;
+ const side=key.endsWith('L')?/(left|[_.\-:|]l([_.\-:|]|$))/i:key.endsWith('R')?/(right|[_.\-:|]r([_.\-:|]|$))/i:null;
  const patterns={spineLow:/spine0?1$/i,spineHigh:/spine0?2$/i,head:/head/i,thigh:/thigh|upleg|upperleg/i,calf:/calf|shin|lowerleg/i,foot:/foot/i,uarm:/upperarm|upper_arm|(left|right)arm$/i,farm:/forearm|lowerarm/i};
  const k=key.replace(/[LR]$/,'');const re=patterns[k];return re?bones.filter(b=>re.test(b.name)&&(!side||side.test(b.name))&&!/(twist|roll|helper|ik)/i.test(b.name)).sort((a,b)=>a.name.length-b.name.length)[0]:null;
 }
@@ -169,12 +169,12 @@ $('duration').onchange=()=>{duration=Math.max(.1,Number($('duration').value)||1)
 $('timeline').oninput=()=>{const t=Number($('timeline').value);$('timeValue').value=t;if(frames.length)resetToFrame(t);else if(selectedClip&&mixer){stopPreview();const a=mixer.clipAction(selectedClip);a.play();a.paused=true;a.time=t;a.getMixer().update(0)}const b=boneByName.get($('boneSelect').value);if(b)syncSliders($('boneSliders'),b)};
 $('timeValue').onchange=()=>{$('timeline').value=$('timeValue').value;$('timeline').dispatchEvent(new Event('input'))};
 $('saveAnim').onclick=saveAnimation;$('downloadAnim').onclick=()=>download('survival-playa-animaciones.json',JSON.stringify(animationEdits,null,2));
-function selectedHandBones(){const side=$('handSide').value==='R'?/(right|[_.\\-:|]r([_.\\-:|]|$))/i:/(left|[_.\\-:|]l([_.\\-:|]|$))/i;return bones.filter(b=>side.test(b.name)&&/(arm|forearm|hand|thumb|index|middle|ring|pinky|finger|wrist)/i.test(b.name))}
+function selectedHandBones(){const side=$('handSide').value==='R'?/(right|[_.\-:|]r([_.\-:|]|$))/i:/(left|[_.\-:|]l([_.\-:|]|$))/i;return bones.filter(b=>side.test(b.name)&&/(arm|forearm|hand|thumb|index|middle|ring|pinky|finger|wrist)/i.test(b.name))}
 let handProp=null, handPropAnchor=null;
 const handPropLoader=new GLTFLoader();
 function buildHandProp(){
  if(handProp){handProp.parent?.remove(handProp);handProp=null}
- const side=$('handSide').value, sideRe=side==='R'?/(right|[_.\\-:|]r([_.\\-:|]|$))/i:/(left|[_.\\-:|]l([_.\\-:|]|$))/i;
+ const side=$('handSide').value, sideRe=side==='R'?/(right|[_.\-:|]r([_.\-:|]|$))/i:/(left|[_.\-:|]l([_.\-:|]|$))/i;
  const handBone=bones.find(b=>sideRe.test(b.name)&&/hand/i.test(b.name)&&!/(thumb|index|middle|ring|pinky|finger|twist|ik)/i.test(b.name))
    || bones.find(b=>sideRe.test(b.name)&&/wrist/i.test(b.name));
  const type=$('handObject').value, prop=new THREE.Group();handProp=prop;handPropAnchor=handBone||character;
