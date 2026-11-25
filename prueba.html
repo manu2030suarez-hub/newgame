@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Survival Playa — Prueba de NPC</title>
+<style>
+:root{color-scheme:dark;--panel:rgba(10,20,27,.88);--line:rgba(255,255,255,.13);--gold:#e8bd79;--muted:#aebdc3}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101c24;font-family:Inter,system-ui,Arial,sans-serif;color:#f4f2ed}
+#scene{position:fixed;inset:0;background:linear-gradient(#8bb8c5 0%,#d1c2a2 57%,#b69b70 100%)}
+canvas{display:block;width:100%;height:100%}
+#top{position:fixed;top:0;left:0;right:0;padding:calc(14px + env(safe-area-inset-top)) 16px 12px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;background:linear-gradient(#07131bc9,transparent)}
+.brand{font-size:12px;letter-spacing:.2em;color:#f3d8ad;font-weight:800}.sub{font-size:11px;color:#d6e0df;margin-top:4px}
+.pill{border:1px solid #ffffff30;background:#10232dbb;border-radius:99px;padding:7px 11px;font-size:11px;color:#e6d6bd}
+#npcname{position:fixed;left:50%;top:17%;transform:translateX(-50%);text-align:center;text-shadow:0 2px 12px #17242b}
+#npcname strong{display:block;font-size:18px;letter-spacing:.04em}#npcname span{font-size:11px;color:#f4dfbd}
+#chat{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));width:min(620px,calc(100% - 22px));height:min(43vh,390px);min-height:280px;border:1px solid var(--line);border-radius:19px;background:var(--panel);backdrop-filter:blur(16px);box-shadow:0 15px 55px #0007;display:flex;flex-direction:column;overflow:hidden}
+#chathead{padding:12px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+#chathead b{font-size:13px}#chathead small{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+#messages{padding:12px 13px;overflow:auto;display:flex;flex-direction:column;gap:9px;flex:1}
+.msg{max-width:88%;padding:10px 12px;border-radius:13px;font-size:13px;line-height:1.4;white-space:pre-wrap}
+.msg.npc{align-self:flex-start;background:#ffffff12;border:1px solid #ffffff12;border-bottom-left-radius:4px}
+.msg.you{align-self:flex-end;background:#b98a53;color:#171b1c;border-bottom-right-radius:4px}
+#quick{display:flex;gap:7px;padding:0 12px 9px;overflow-x:auto}
+.quick{white-space:nowrap;background:#ffffff0b;border:1px solid var(--line);border-radius:99px;color:#e9d8c2;padding:7px 10px;font-size:11px}
+#composer{display:flex;gap:8px;padding:10px 11px;border-top:1px solid var(--line);align-items:center}
+#input{min-width:0;flex:1;background:#ffffff0d;border:1px solid var(--line);border-radius:12px;padding:12px;color:white;font-size:14px;outline:none}
+.action{width:42px;height:42px;border:1px solid #ffffff24;border-radius:12px;background:#ffffff12;color:white;font-size:17px;flex:none}
+#send{background:#c69a62;color:#172027;border:0;font-weight:800}
+#hint{position:fixed;top:calc(65px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);font-size:10px;color:#f5eee1;background:#10232d8c;padding:7px 11px;border-radius:99px;white-space:nowrap}
+#loading{position:fixed;inset:0;display:grid;place-items:center;background:#15232a;color:#f4e4cb;z-index:5;text-align:center;padding:25px}
+#loading small{display:block;color:#b8c4c5;margin-top:9px}
+#status{font-size:10px;color:#d7c39f}
+@media(min-width:800px){#chat{left:auto;right:22px;transform:none;width:390px;height:min(48vh,420px);bottom:22px}#npcname{top:20%;left:38%}}
+@media(max-height:650px){#chat{height:48vh;min-height:220px}#npcname{top:13%}#hint{top:58px}}
+</style>
+</head>
+<body>
+<div id="scene"></div>
+<div id="top"><div><div class="brand">SURVIVAL PLAYA</div><div class="sub">Encuentro con un sobreviviente · prototipo</div></div><div class="pill">MODO PRUEBA</div></div>
+<div id="npcname"><strong>Daniel</strong><span>Sobreviviente · Isla</span></div>
+<div id="hint">Acercate y hablá con Daniel</div>
+<section id="chat">
+ <div id="chathead"><div><b>Daniel</b><small>Está escuchándote</small></div><span id="status">● Disponible</span></div>
+ <div id="messages" aria-live="polite"><div class="msg npc">Ey… ¿estás bien? Te vi llegar desde la costa. Soy Daniel. Hace días que estoy en esta isla.</div></div>
+ <div id="quick"><button class="quick" data-msg="¿Hace cuánto estás en la isla?">¿Hace cuánto estás acá?</button><button class="quick" data-msg="¿Hay otros sobrevivientes?">¿Hay más gente?</button><button class="quick" data-msg="¿Qué peligros hay en la isla?">¿Qué peligros hay?</button></div>
+ <form id="composer"><input id="input" autocomplete="off" placeholder="Escribile a Daniel…" aria-label="Mensaje"><button class="action" id="mic" type="button" title="Hablar por micrófono">🎙</button><button class="action" id="send" type="submit" title="Enviar">➤</button></form>
+</section>
+<div id="loading"><div><b>Cargando a Daniel…</b><small id="loadmsg">Preparando el modelo 3D del sobreviviente</small></div></div>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {GLTFLoader} from 'https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/loaders/GLTFLoader.js';
+const root=document.getElementById('scene'),loading=document.getElementById('loading'),loadmsg=document.getElementById('loadmsg');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x9fc3c9);scene.fog=new THREE.Fog(0x9fc3c9,9,25);
+const camera=new THREE.PerspectiveCamera(34,innerWidth/innerHeight,.1,100);camera.position.set(0,1.55,5.4);camera.lookAt(0,.95,0);
+const renderer=new THREE.WebGLRenderer({antialias:!matchMedia('(pointer:coarse)').matches,alpha:false,powerPreference:'low-power'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;root.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xdff4ff,0x75604a,2));
+const sun=new THREE.DirectionalLight(0xffe1b8,3.2);sun.position.set(-3,7,5);scene.add(sun);
+const sand=new THREE.Mesh(new THREE.PlaneGeometry(80,80),new THREE.MeshStandardMaterial({color:0xc5ad83,roughness:1}));sand.rotation.x=-Math.PI/2;sand.position.y=-.035;scene.add(sand);
+const sea=new THREE.Mesh(new THREE.PlaneGeometry(80,18),new THREE.MeshStandardMaterial({color:0x367f91,roughness:.32,metalness:.08}));sea.rotation.x=-Math.PI/2;sea.position.set(0,-.025,-13);scene.add(sea);
+const horizon=new THREE.Mesh(new THREE.PlaneGeometry(80,5),new THREE.MeshBasicMaterial({color:0x8db9bd}));horizon.position.set(0,1.2,-19);scene.add(horizon);
+const avatar=new THREE.Group();scene.add(avatar);let mixer=null,clock=new THREE.Clock(),modelReady=false;
+new GLTFLoader().load('./man-base-character-rigged.glb',g=>{
+ const model=g.scene;model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false;}});
+ model.updateMatrixWorld(true);let box=new THREE.Box3().setFromObject(model,true);let h=box.max.y-box.min.y;
+ if(!Number.isFinite(h)||h<.01){model.scale.setScalar(100);model.updateMatrixWorld(true);box.setFromObject(model,true);h=box.max.y-box.min.y;}
+ model.scale.multiplyScalar(1.8/Math.max(h,.001));model.updateMatrixWorld(true);box.setFromObject(model,true);
+ model.position.y-=box.min.y;const center=box.getCenter(new THREE.Vector3());model.position.x-=center.x;model.position.z-=center.z;
+ avatar.add(model);mixer=new THREE.AnimationMixer(model);
+ const clips=g.animations||[];const idle=clips.find(c=>/idle|breath|stand/i.test(c.name))||clips[0];if(idle){const a=mixer.clipAction(idle);a.play();}
+ modelReady=true;loading.style.display='none';
+},p=>{if(p.total)loadmsg.textContent='Cargando modelo 3D… '+Math.round(p.loaded/p.total*100)+'%';},e=>{console.error(e);loadmsg.innerHTML='No se pudo cargar el modelo 3D.<small>Revisá la conexión y recargá la página.</small>';});
+function addMessage(text,who){const el=document.createElement('div');el.className='msg '+who;el.textContent=text;const box=document.getElementById('messages');box.appendChild(el);box.scrollTop=box.scrollHeight;}
+function replyTo(text){
+ const t=text.toLowerCase();let answer;
+ if(/hola|buenas|ey|hey/.test(t))answer='Hola… me alegra encontrar a alguien más. Pensé que estaba completamente solo en esta isla.';
+ else if(/hace cuánto|cuanto tiempo|días|dias/.test(t))answer='Perdí la cuenta… creo que llevo cuatro o cinco días. La tormenta me arrastró hasta la otra punta de la playa.';
+ else if(/otros|gente|personas|sobrevivientes|sobrevivientes/.test(t))answer='No vi a nadie de cerca. Anoche escuché algo entre los árboles, pero no sé si era una persona…';
+ else if(/peligro|animal|tibur|oso|selva/.test(t))answer='No te metas al agua muy profundo. Vi sombras grandes cerca de la costa. Y en la selva conviene no caminar de noche.';
+ else if(/comida|comer|hambre|agua|sed/.test(t))answer='Buscá cocos y algo para pescar. Pero cuidá la comida: los animales se acercan si la dejás tirada.';
+ else if(/ayuda|juntos|acompañar|acompañas/.test(t))answer='Podemos ayudarnos, sí. Primero necesitamos un refugio y mantener una fogata encendida.';
+ else if(/nombre|quién sos|quien sos/.test(t))answer='Me llamo Daniel. Antes trabajaba en barcos de carga. Esta isla no estaba en ningún mapa que yo conociera.';
+ else if(/barco|naufragio|avión|avion/.test(t))answer='Vi restos de un barco cerca de la orilla. Tal vez podamos revisar si quedó algo útil entre los restos.';
+ else answer='Entiendo… Todavía estoy tratando de acostumbrarme a este lugar. ¿Qué pensás hacer ahora? Podemos buscar comida, explorar la isla o levantar un refugio.';
+ return answer;
+}
+function speak(text){if(!('speechSynthesis'in window))return; speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=.94;const voices=speechSynthesis.getVoices();u.voice=voices.find(v=>/^es(-|_)/i.test(v.lang))||null;speechSynthesis.speak(u);}
+function send(text){const clean=text.trim();if(!clean)return;addMessage(clean,'you');document.getElementById('input').value='';document.getElementById('status').textContent='● Pensando…';setTimeout(()=>{const answer=replyTo(clean);addMessage(answer,'npc');document.getElementById('status').textContent='● Disponible';speak(answer);},650+Math.random()*500);}
+document.getElementById('composer').addEventListener('submit',e=>{e.preventDefault();send(document.getElementById('input').value);});
+document.querySelectorAll('.quick').forEach(b=>b.addEventListener('click',()=>send(b.dataset.msg)));
+const mic=document.getElementById('mic');const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(Recognition){const rec=new Recognition();rec.lang='es-UY';rec.interimResults=false;rec.maxAlternatives=1;mic.addEventListener('click',()=>{try{rec.start();mic.textContent='⏺';document.getElementById('status').textContent='● Te escucha…';}catch(e){}});rec.onresult=e=>{const said=e.results[0][0].transcript;document.getElementById('input').value=said;send(said);};rec.onerror=()=>{mic.textContent='🎙';document.getElementById('status').textContent='● No se pudo usar el micrófono';};rec.onend=()=>{mic.textContent='🎙';if(document.getElementById('status').textContent.includes('escucha'))document.getElementById('status').textContent='● Disponible';};}
+else{mic.addEventListener('click',()=>{document.getElementById('status').textContent='Micrófono no compatible en este navegador';});}
+let targetY=0;function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;if(mixer)mixer.update(dt);if(modelReady){avatar.position.y=.012*Math.sin(t*1.6);avatar.rotation.y=.045*Math.sin(t*.45);}renderer.render(scene,camera);}animate();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+</script>
+</body>
+</html>
