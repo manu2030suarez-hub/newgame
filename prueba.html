@@ -37,13 +37,13 @@ canvas{display:block;width:100%;height:100%}
 </head>
 <body>
 <div id="scene"></div>
-<div id="top"><div><div class="brand">SURVIVAL PLAYA</div><div class="sub">Encuentro con un sobreviviente · prototipo</div></div><div class="pill">MODO PRUEBA</div></div>
-<div id="npcname"><strong>Daniel</strong><span>Sobreviviente · Isla</span></div>
+<div id="top"><div><div class="brand">SURVIVAL PLAYA</div><div class="sub">Prueba independiente de inteligencia artificial</div></div><div class="pill">MODO PRUEBA</div></div>
+<div id="npcname"><strong>Daniel</strong><span>Personaje · Prueba de conversación</span></div>
 <div id="hint">Acercate y hablá con Daniel</div>
 <section id="chat">
  <div id="chathead"><div><b>Daniel</b><small>NPC con inteligencia local experimental</small></div><div id="voiceTools"><select id="voiceSelect" aria-label="Voz de Daniel"><option>Cargando voces…</option></select><button id="testVoice" type="button">▶ Voz</button></div></div><div id="brainInfo"><button id="brainButton" type="button">🧠 Encender cerebro IA</button> <span id="brainStatus">Todavía no está cargado. La primera descarga puede ser grande.</span></div><div style="padding:0 14px 7px;border-bottom:1px solid var(--line);display:flex;justify-content:flex-end"><span id="status">● Esperando IA</span></div>
- <div id="messages" aria-live="polite"><div class="msg npc">Ey… ¿estás bien? Te vi llegar desde la costa. Soy Daniel. Hace días que estoy en esta isla.</div></div>
- <div id="quick"><button class="quick" data-msg="¿Hace cuánto estás en la isla?">¿Hace cuánto estás acá?</button><button class="quick" data-msg="¿Hay otros sobrevivientes?">¿Hay más gente?</button><button class="quick" data-msg="¿Qué peligros hay en la isla?">¿Qué peligros hay?</button></div>
+ <div id="messages" aria-live="polite"><div class="msg npc">Hola. Soy Daniel. ¿Cómo te llamás?</div></div>
+ <div id="quick"><button class="quick" data-msg="Contame algo de vos.">Contame de vos</button><button class="quick" data-msg="¿Qué te gusta hacer?">¿Qué te gusta?</button><button class="quick" data-msg="¿Cómo viene tu día?">¿Cómo estás?</button></div>
  <form id="composer"><input id="input" autocomplete="off" placeholder="Escribile a Daniel…" aria-label="Mensaje"><button class="action" id="mic" type="button" title="Hablar por micrófono">🎙</button><button class="action" id="send" type="submit" title="Enviar">➤</button></form>
 </section>
 <div id="loading"><div><b>Cargando a Daniel…</b><small id="loadmsg">Preparando el modelo 3D del sobreviviente</small></div></div>
