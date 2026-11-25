@@ -14,14 +14,16 @@ export function createSharkSystem(THREERef, scene, beach, options = {}) {
       const scale = 4.8 / Math.max(horizontalLength, 0.001);
       const pointsAlongX = size.x > size.z;
       for (const shark of sharks) {
+        const fit = new T.Group();
+        fit.scale.setScalar(scale);
+        if (pointsAlongX) fit.rotation.y = Math.PI / 2;
         const model = sharkTemplate.clone(true);
         model.position.set(-center.x, -center.y, -center.z);
-        model.scale.setScalar(scale);
-        if (pointsAlongX) model.rotation.y = Math.PI / 2;
         model.traverse(obj => {
           if (obj.isMesh) { obj.castShadow = true; obj.receiveShadow = true; }
         });
-        shark.body.add(model);
+        fit.add(model);
+        shark.body.add(fit);
         shark.root.visible = true;
       }
       console.info('[Tiburones] Modelo shark.glb cargado; ejemplares:', sharks.length);
