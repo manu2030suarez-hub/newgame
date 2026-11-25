@@ -75,20 +75,64 @@ new GLTFLoader().load('./man-base-character-rigged.glb',g=>{
  modelReady=true;loading.style.display='none';
 },p=>{if(p.total)loadmsg.textContent='Cargando modelo 3D… '+Math.round(p.loaded/p.total*100)+'%';},e=>{console.error(e);loadmsg.innerHTML='No se pudo cargar el modelo 3D.<small>Revisá la conexión y recargá la página.</small>';});
 function addMessage(text,who){const el=document.createElement('div');el.className='msg '+who;el.textContent=text;const box=document.getElementById('messages');box.appendChild(el);box.scrollTop=box.scrollHeight;}
+const replyMemory={lastIntent:"",lastAnswer:"",lastQuestion:"",counts:{}};
 function replyTo(text){
- const t=text.toLowerCase();let answer;
- if(/hola|buenas|ey|hey/.test(t))answer='Hola… me alegra encontrar a alguien más. Pensé que estaba completamente solo en esta isla.';
- else if(/hace cuánto|cuanto tiempo|días|dias/.test(t))answer='Perdí la cuenta… creo que llevo cuatro o cinco días. La tormenta me arrastró hasta la otra punta de la playa.';
- else if(/otros|gente|personas|sobrevivientes|sobrevivientes/.test(t))answer='No vi a nadie de cerca. Anoche escuché algo entre los árboles, pero no sé si era una persona…';
- else if(/peligro|animal|tibur|oso|selva/.test(t))answer='No te metas al agua muy profundo. Vi sombras grandes cerca de la costa. Y en la selva conviene no caminar de noche.';
- else if(/comida|comer|hambre|agua|sed/.test(t))answer='Buscá cocos y algo para pescar. Pero cuidá la comida: los animales se acercan si la dejás tirada.';
- else if(/ayuda|juntos|acompañar|acompañas/.test(t))answer='Podemos ayudarnos, sí. Primero necesitamos un refugio y mantener una fogata encendida.';
- else if(/nombre|quién sos|quien sos/.test(t))answer='Me llamo Daniel. Antes trabajaba en barcos de carga. Esta isla no estaba en ningún mapa que yo conociera.';
- else if(/barco|naufragio|avión|avion/.test(t))answer='Vi restos de un barco cerca de la orilla. Tal vez podamos revisar si quedó algo útil entre los restos.';
- else answer='Entiendo… Todavía estoy tratando de acostumbrarme a este lugar. ¿Qué pensás hacer ahora? Podemos buscar comida, explorar la isla o levantar un refugio.';
+ const t=text.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');
+ let intent="general";
+ if(/hola|buenas|ey|hey/.test(t))intent="saludo";
+ else if(/hace cuanto|cuanto tiempo|dias/.test(t))intent="tiempo";
+ else if(/otros|gente|personas|sobrevivientes/.test(t))intent="personas";
+ else if(/peligro|animal|tibur|oso|selva/.test(t))intent="peligros";
+ else if(/comida|comer|hambre|agua|sed/.test(t))intent="recursos";
+ else if(/ayuda|juntos|acompanar|acompanas/.test(t))intent="ayuda";
+ else if(/nombre|quien sos/.test(t))intent="nombre";
+ else if(/barco|naufragio|avion/.test(t))intent="naufragio";
+ const pools={
+ saludo:["¡Hola! Qué alivio ver otra cara por acá. ¿Venís del lado del barco?","Buenas… no esperaba encontrar a nadie hoy. ¿Estás solo?","Hola. Acercate, así hablamos sin gritarnos desde lejos."],
+ tiempo:["Calculo que unos cuatro o cinco días, aunque perdí la cuenta después de la tormenta. Los primeros los pasé buscando agua.","No estoy seguro. ¿Cuatro días? La tormenta me dejó lejos de donde encalló el barco.","Unos días ya… al principio marqué el tiempo, pero después dejé de hacerlo. ¿Vos acabás de llegar?"],
+ personas:["No encontré a nadie todavía. A veces escucho ruidos tierra adentro, pero no me animé a seguirlos solo.","Sos la primera persona que veo desde el naufragio. Me gustaría pensar que hay más sobrevivientes.","No lo sé. Revisé un tramo de playa y no vi a nadie. Podríamos buscar juntos cuando estemos preparados."],
+ peligros:["El mar cambia rápido. Vi una sombra grande bajo el agua, así que no me alejaría demasiado de la orilla.","De noche la selva se vuelve difícil de recorrer. También escuché movimiento entre los árboles; mejor ir con cuidado.","Hay que vigilar el agua y la vegetación. No te confíes aunque la playa parezca tranquila."],
+ recursos:["Encontré cocos cerca de las palmeras. Para el agua, conviene juntar lluvia y hervir lo que no conozcamos.","La comida no sobra. Podemos buscar cocos y preparar una trampa para pescar, pero no dejemos restos cerca del refugio.","Tengo algo de comida guardada, pero no va a durar. ¿Ya encontraste algún recipiente para cocinar?"],
+ ayuda:["Sí, dos personas tienen más posibilidades. Primero hagamos un refugio sencillo y mantengamos una fogata.","Me parece bien. Yo puedo revisar la costa mientras vos buscás materiales. Después comparamos lo que encontramos.","Claro. No quiero pasar otra noche solo. Pero vayamos con cuidado y no nos separemos demasiado."],
+ nombre:["Daniel. Antes trabajaba en barcos de carga. Todavía me cuesta creer que terminara acá.","Soy Daniel. El barco se partió durante la tormenta y desperté en esta playa.","Daniel. ¿Y vos cómo te llamás? Quizás podamos organizarnos."],
+ naufragio:["Vi parte del casco cerca de la orilla. Puede que queden herramientas o provisiones entre los restos.","El barco quedó bastante destrozado. No revisé todo todavía; algunas partes parecen inestables.","Si hablamos del barco encallado, sí: está cerca de la playa. Podemos mirar los restos cuando baje la marea."],
+ general:["No había pensado en eso… ¿Qué viste vos desde que llegaste?","Puede ser. Todavía estoy conociendo la isla. Contame un poco más.","Te escucho. ¿Eso lo encontraste cerca de la playa o más hacia la selva?","No estoy seguro todavía. Prefiero no inventarte una respuesta; podemos averiguarlo explorando."]
+ };
+ const options=pools[intent]||pools.general;
+ const count=replyMemory.counts[intent]||0;
+ let answer=options[count%options.length];
+ if(intent===replyMemory.lastIntent && answer===replyMemory.lastAnswer){
+   answer=options[(count+1)%options.length];
+ }
+ replyMemory.counts[intent]=count+1;
+ if(intent===replyMemory.lastIntent && text.trim().toLowerCase()===replyMemory.lastQuestion){
+   answer="Me preguntaste eso recién. "+answer;
+ }
+ replyMemory.lastIntent=intent;replyMemory.lastAnswer=answer;replyMemory.lastQuestion=text.trim().toLowerCase();
  return answer;
 }
-function speak(text){if(!('speechSynthesis'in window))return; speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=.94;const voices=speechSynthesis.getVoices();u.voice=voices.find(v=>/^es(-|_)/i.test(v.lang))||null;speechSynthesis.speak(u);}
+let selectedSpanishVoice=null;
+function chooseDanielVoice(){
+ if(!('speechSynthesis'in window))return;
+ const voices=speechSynthesis.getVoices().filter(v=>/^es([_-]|$)/i.test(v.lang));
+ if(!voices.length)return;
+ const maleHints=/\b(male|mascul|alvaro|jorge|pablo|diego|carlos|andres|andrés|juan|miguel|antonio|raul|raúl|daniel|male)\b/i;
+ const preferred=voices.find(v=>/es[-_]UY|es[-_]AR/i.test(v.lang)&&maleHints.test(v.name))
+   ||voices.find(v=>maleHints.test(v.name))
+   ||voices.find(v=>/es[-_]UY|es[-_]AR/i.test(v.lang))
+   ||voices.find(v=>/es[-_]ES/i.test(v.lang))
+   ||voices[0];
+ selectedSpanishVoice=preferred;
+}
+if('speechSynthesis'in window){chooseDanielVoice();speechSynthesis.addEventListener('voiceschanged',chooseDanielVoice);}
+function speak(text){
+ if(!('speechSynthesis'in window))return;
+ speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(text);
+ u.lang=selectedSpanishVoice?.lang||'es-UY';u.rate=.91;u.pitch=.88;
+ if(selectedSpanishVoice)u.voice=selectedSpanishVoice;
+ speechSynthesis.speak(u);
+}
 function send(text){const clean=text.trim();if(!clean)return;addMessage(clean,'you');document.getElementById('input').value='';document.getElementById('status').textContent='● Pensando…';setTimeout(()=>{const answer=replyTo(clean);addMessage(answer,'npc');document.getElementById('status').textContent='● Disponible';speak(answer);},650+Math.random()*500);}
 document.getElementById('composer').addEventListener('submit',e=>{e.preventDefault();send(document.getElementById('input').value);});
 document.querySelectorAll('.quick').forEach(b=>b.addEventListener('click',()=>send(b.dataset.msg)));
