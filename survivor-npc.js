@@ -193,6 +193,7 @@ export function createSurvivorNPC(THREE, scene, loader, beach, options = {}) {
       walkAction=actions.find(a=>/(walk|caminar|andar|walking)/.test(a.name))?.action||null;runAction=actions.find(a=>/(run|running|correr|sprint)/.test(a.name))?.action||null;idleAction=actions.find(a=>/(idle|quieto|standing|stand)/.test(a.name))?.action||null;lookAction=actions.find(a=>/(look|looking|search|scan|mirar)/.test(a.name))?.action||null;crouchAction=actions.find(a=>/(crouch|squat|agach|duck)/.test(a.name))?.action||null;fishAction=actions.find(a=>/(fish|fishing|pescar)/.test(a.name))?.action||null;huntAction=actions.find(a=>/(hunt|hunting|cazar)/.test(a.name))?.action||null;
       root.position.set(home.x,groundAt(home.x,home.z),home.z);root.rotation.y=rand(0,Math.PI*2);ready=true;root.visible=true;
       status('Listo · IA local o modo compatible');
+      if(!navigator.gpu)activateFallback('Este dispositivo no ofrece WebGPU');
       console.info('[Daniel] Modelo cargado. Animaciones disponibles:',{walk:!!walkAction,run:!!runAction,look:!!lookAction,crouch:!!crouchAction,fish:!!fishAction,hunt:!!huntAction,idle:!!idleAction,clips:clips.map(c=>c.name)});
     }catch(e){failed=true;console.error('[Daniel] No se pudo preparar el personaje:',e);options.onError?.(e);}
   },undefined,error=>{failed=true;console.error('[Daniel] No se pudo cargar el modelo:',error);options.onError?.(error);});
