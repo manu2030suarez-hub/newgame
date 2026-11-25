@@ -6,7 +6,7 @@ export function createSurvivorNPC(THREE, scene, loader, beach, options = {}) {
   const home={x:94,z:145}, bounds={minX:70,maxX:118,minZ:128,maxZ:150};
   const root=new THREE.Group();root.name='daniel-survivor';root.visible=false;scene.add(root);
   let mixer=null,model=null,walkAction=null,idleAction=null,currentAction=null;
-  let ready=false,failed=false,engine=null,brainBusy=false,planBusy=false,lastPlanAt=0;
+  let ready=false,failed=false,engine=null,brainBusy=false,planBusy=false,modelBusy=false,lastPlanAt=0;
   let target=null,mode='waiting',clock=0,moveBlend=0;
   const bones={},rest=new Map(),history=[];
   const rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -79,8 +79,8 @@ export function createSurvivorNPC(THREE, scene, loader, beach, options = {}) {
     }catch{return null;}
   }
   async function think(playerPosition,env){
-    if(!engine||planBusy||clock-lastPlanAt<7)return;
-    planBusy=true;lastPlanAt=clock;
+    if(!engine||planBusy||modelBusy||clock-lastPlanAt<7)return;
+    planBusy=true;modelBusy=true;lastPlanAt=clock;
     try{
       const snapshot=environment(playerPosition,env);
       const raw=await askModel('Observá esta situación actual y elegí tu próxima acción autónoma. No repitas una rutina fija; razoná según lo que ocurre ahora. Estado: '+JSON.stringify(snapshot)+'. Devolvé únicamente el JSON de acción.',120,.55);
@@ -97,12 +97,13 @@ export function createSurvivorNPC(THREE, scene, loader, beach, options = {}) {
         if(mode==='flee')status('IA decidió escapar de un peligro');else status('IA activa · '+mode);
       }
     }catch(e){console.warn('[Daniel IA] Error al decidir:',e);status('IA activa · reintentando decisión');}
-    finally{planBusy=false;}
+    finally{planBusy=false;modelBusy=false;}
   }
   async function sendMessage(text){
     ui.body.style.display='block';addMessage(text,'you');
     if(!engine){addMessage('Todavía no tengo el cerebro encendido. Tocá «Encender IA» para iniciar el modelo local.');return;}
     status('Daniel está pensando…');
+    while(modelBusy)await new Promise(resolve=>setTimeout(resolve,120));modelBusy=true;
     try{
       const snapshot=environment(options.getPlayerPosition?.(),options.getEnvironment?.()||{});
       const prompt='El jugador te dice: '+text+'\nObservación actual del entorno: '+JSON.stringify(snapshot)+'\nContestale directamente, de forma natural y coherente. Si hay peligro cercano, podés mencionarlo solo si está en los datos.';
@@ -110,6 +111,7 @@ export function createSurvivorNPC(THREE, scene, loader, beach, options = {}) {
       if(answer){history.push({role:'user',content:prompt},{role:'assistant',content:answer});addMessage(answer);speak(answer);}
       status('IA encendida · decido mis propias acciones');
     }catch(e){console.error(e);addMessage('Perdón, tuve un problema al responder.');status('IA activa · error al responder');}
+    finally{modelBusy=false;}
   }
   function speak(text){if(!('speechSynthesis'in window))return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='es-UY';u.rate=.96;speechSynthesis.speak(u);}catch{}}
   function fadeTo(action,duration=.35){if(!action||currentAction===action)return;if(currentAction)currentAction.fadeOut(duration);action.reset().fadeIn(duration).play();currentAction=action;}
