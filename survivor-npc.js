@@ -119,7 +119,7 @@ export function createSurvivorNPC(THREE, scene, loader, beach, options = {}) {
   function speak(text){if(!('speechSynthesis'in window))return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='es-UY';u.rate=.96;speechSynthesis.speak(u);}catch{}}
   function fadeTo(action,duration=.35){if(!action||currentAction===action)return;if(currentAction)currentAction.fadeOut(duration);action.reset().fadeIn(duration).play();currentAction=action;}
   function pose(time,walking){
-    const gait=Math.sin(time*(walking?7.2:1.5))*(walking?1:0);
+    const gait=Math.sin(time*(walking?(mode==='run'||mode==='flee'?10.2:7.2):1.5))*(walking?1:0);
     if(bones.spine)bones.spine.rotation.x=(rest.get(bones.spine)?.x||0)+Math.sin(time*1.7)*.018;
     if(bones.head)bones.head.rotation.y=(rest.get(bones.head)?.y||0)+Math.sin(time*.72)*.035;
     if(!walkAction){if(bones.leftLeg)bones.leftLeg.rotation.x=(rest.get(bones.leftLeg)?.x||0)+gait*.42;if(bones.rightLeg)bones.rightLeg.rotation.x=(rest.get(bones.rightLeg)?.x||0)-gait*.42;if(bones.leftArm)bones.leftArm.rotation.x=(rest.get(bones.leftArm)?.x||0)-gait*.22;if(bones.rightArm)bones.rightArm.rotation.x=(rest.get(bones.rightArm)?.x||0)+gait*.22;}
@@ -163,7 +163,7 @@ export function createSurvivorNPC(THREE, scene, loader, beach, options = {}) {
       if(!Number.isFinite(h)||h<.001)throw new Error('El modelo de Daniel no tiene una altura válida.');
       model.scale.multiplyScalar(HEIGHT/h);model.updateMatrixWorld(true);box.setFromObject(model,true);model.position.y-=box.min.y;
       const center=box.getCenter(new THREE.Vector3());model.position.x-=center.x;model.position.z-=center.z;model.updateMatrixWorld(true);
-      model.traverse(o=>{if(!o.isBone)return;const n=o.name.toLowerCase();if(/spine/.test(n)&&!bones.spine)bones.spine=o;if(/head/.test(n)&&!bones.head)bones.head=o;if(/hips|pelvis/.test(n)&&!bones.hips)bones.hips=o;if(/left.*(thigh|upleg|leg)$/.test(n)||/thigh.*left/.test(n))bones.leftLeg=o;if(/right.*(thigh|upleg|leg)$/.test(n)||/thigh.*right/.test(n))bones.rightLeg=o;if(/left.*upper.?arm/.test(n))bones.leftArm=o;if(/right.*upper.?arm/.test(n))bones.rightArm=o;rest.set(o,o.rotation.clone());});
+      model.traverse(o=>{if(!o.isBone)return;const n=o.name.toLowerCase();if(/spine/.test(n)&&!bones.spine)bones.spine=o;if(/head/.test(n)&&!bones.head)bones.head=o;if(/hips|pelvis/.test(n)&&!bones.hips)bones.hips=o;if(/left.*(thigh|upleg|leg)$/.test(n)||/thigh.*left/.test(n))bones.leftLeg=o;if(/right.*(thigh|upleg|leg)$/.test(n)||/thigh.*right/.test(n))bones.rightLeg=o;if(/left.*(upper.?arm|arm)$/.test(n))bones.leftArm=o;if(/right.*(upper.?arm|arm)$/.test(n))bones.rightArm=o;rest.set(o,o.rotation.clone());});
       mixer=new THREE.AnimationMixer(model);const clips=[...(gltf.animations||[])];
       try{const edits=JSON.parse(localStorage.getItem('survivalPlaya.animationEdits.v1')||'{}');for(const edit of Object.values(edits))if(edit?.clip?.tracks?.length){try{clips.push(THREE.AnimationClip.parse(edit.clip));}catch(e){console.warn('[Daniel] Animación manual inválida:',e);}}}catch{}
       const actions=clips.map(c=>({name:c.name.toLowerCase(),action:mixer.clipAction(c)}));
