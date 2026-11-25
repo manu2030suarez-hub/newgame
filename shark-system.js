@@ -1,7 +1,5 @@
-import * as THREE from 'three';
-
 export function createSharkSystem(THREERef, scene, beach, options = {}) {
-  const T = THREERef || THREE;
+  const T = THREERef;
   const sharks = [];
   const bodyMat = new T.MeshStandardMaterial({ color: 0x53636a, roughness: .72, metalness: .08 });
   const bellyMat = new T.MeshStandardMaterial({ color: 0xb8b9ad, roughness: .88 });
