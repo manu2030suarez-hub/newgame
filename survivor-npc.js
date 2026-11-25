@@ -5,10 +5,13 @@ export function createSurvivorNPC(THREE, scene, loader, beach, options = {}) {
   const MODEL_PATH='./man-base-character-rigged.glb', HEIGHT=1.8;
   const home={x:94,z:145}, bounds={minX:70,maxX:118,minZ:128,maxZ:150};
   const root=new THREE.Group();root.name='daniel-survivor';root.visible=false;scene.add(root);
-  let mixer=null,model=null,walkAction=null,idleAction=null,currentAction=null;
+  let mixer=null,model=null,walkAction=null,runAction=null,idleAction=null,lookAction=null,crouchAction=null,fishAction=null,huntAction=null,currentAction=null;
   let ready=false,failed=false,engine=null,brainBusy=false,planBusy=false,modelBusy=false,lastPlanAt=0;
-  let target=null,mode='waiting',clock=0,moveBlend=0;
-  const bones={},rest=new Map(),history=[];
+  let target=null,mode='waiting',clock=0,moveBlend=0,lastGreetingAt=-1000,lastPlayerDistance=Infinity;
+  const bones={},rest=new Map();
+  const MEMORY_KEY='survivalPlaya.daniel.memory.v1';let history=[];
+  try{const saved=JSON.parse(localStorage.getItem(MEMORY_KEY)||'[]');if(Array.isArray(saved))history=saved.filter(m=>m&&['user','assistant'].includes(m.role)&&typeof m.content==='string').slice(-24);}catch{}
+  function saveMemory(){try{localStorage.setItem(MEMORY_KEY,JSON.stringify(history.slice(-24)));}catch{}}
   const rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const groundAt=(x,z)=>beach.surfaceHeightAt?.(x,z)??beach.heightAt(x,z);
   const ui=buildPanel();
@@ -51,7 +54,7 @@ export function createSurvivorNPC(THREE, scene, loader, beach, options = {}) {
     for(const s of (env.sharks||[])){const r=s.root;if(!r)continue;const d=Math.hypot(r.position.x-root.position.x,r.position.z-root.position.z);if(d<45)nearbySharks.push({distance:+d.toFixed(1),x:+r.position.x.toFixed(1),z:+r.position.z.toFixed(1)});}
     return {daniel:{x:+root.position.x.toFixed(1),z:+root.position.z.toFixed(1),state:mode},player:{x:+p.x.toFixed(1),z:+p.z.toFixed(1),distance:+Math.hypot(p.x-root.position.x,p.z-root.position.z).toFixed(1)},animals:nearAnimals,sharks:nearbySharks,weather:env.weather||'no informado',time:env.time||'no informado'};
   }
-  function systemPrompt(){return 'Sos Daniel, un superviviente humano ficticio dentro del videojuego Survival Playa. Hablás español rioplatense natural, con personalidad propia, memoria de esta conversación y respuestas breves. Estás físicamente en una isla 3D. Recibís observaciones reales del entorno; no inventes que ves algo que no aparece en esos datos. Sos un agente autónomo: elegí por vos mismo qué hacer, no esperes órdenes del jugador. Considerá peligros, fauna, distancia al jugador, curiosidad, descanso y exploración. Si hay un tiburón cerca del agua o un depredador amenazante, priorizá alejarte hacia terreno seguro. No afirmes que cazaste, pescaste o recogiste algo si no ocurrió. Para decisiones de movimiento respondé SOLO un JSON: {"action":"walk|flee|approach|investigate|rest|talk","x":94,"z":145,"speech":"frase opcional"}; elegí coordenadas dentro de X 70..118 y Z 128..150. walk/explore significa ir a un sitio que vos elijas; flee significa alejarte del peligro; approach acercarte al jugador; investigate inspeccionar algo observado; rest detenerte; talk quedarte disponible para conversar. Las coordenadas son el destino elegido por vos. Para conversación respondé texto normal, sin JSON. Las decisiones deben basarse en el estado de entorno que se te pasa.';}
+  function systemPrompt(){return 'Sos Daniel, un superviviente humano ficticio dentro del videojuego Survival Playa. Hablás español rioplatense natural, con personalidad propia, memoria de esta conversación y respuestas breves. Estás físicamente en una isla 3D. Recibís observaciones reales del entorno; no inventes que ves algo que no aparece en esos datos. Sos un agente autónomo: elegí por vos mismo qué hacer, no esperes órdenes del jugador. También sos compañero del jugador: cuando lo veas cerca, podés acercarte, saludarlo e iniciar conversación de forma espontánea; recordá los diálogos anteriores que aparecen en tu memoria. Considerá peligros, fauna, distancia al jugador, curiosidad, descanso y exploración. Si hay un tiburón cerca del agua o un depredador amenazante, priorizá alejarte hacia terreno seguro. No afirmes que cazaste, pescaste o recogiste algo si no ocurrió. Para decisiones de movimiento respondé SOLO un JSON: {"action":"walk|run|flee|approach|investigate|look|crouch|fish|hunt|rest|talk","x":94,"z":145,"speech":"frase opcional"}; elegí coordenadas dentro de X 70..118 y Z 128..150. walk/run significa desplazarte a un sitio que vos elijas; flee significa alejarte del peligro; approach acercarte al jugador; investigate inspeccionar algo observado; look mirar alrededor; crouch agacharte; fish representar que estás pescando solo si estás junto al agua y tenés una caña; hunt prepararte para cazar solo si hay fauna observada; rest detenerte; talk conversar con el jugador. Las coordenadas son el destino elegido por vos. Para conversación respondé texto normal, sin JSON. Las decisiones deben basarse en el estado de entorno que se te pasa.';}
   async function startBrain(){
     if(engine||brainBusy)return;
     if(!navigator.gpu){status('Este dispositivo/navegador no tiene WebGPU');ui.start.textContent='Sin WebGPU';ui.start.disabled=true;addMessage('No puedo encender mi cerebro en este dispositivo porque el navegador no ofrece WebGPU. No voy a simular que estoy pensando. Probá desde un equipo compatible; no se usó ningún servicio pago.');return;}
@@ -74,7 +77,7 @@ export function createSurvivorNPC(THREE, scene, loader, beach, options = {}) {
   }
   function parseDecision(raw){
     const match=raw.match(/\{[\s\S]*\}/);if(!match)return null;
-    try{const d=JSON.parse(match[0]);if(!['walk','flee','approach','investigate','rest','talk'].includes(d.action))return null;
+    try{const d=JSON.parse(match[0]);if(!['walk','run','flee','approach','investigate','look','crouch','fish','hunt','rest','talk'].includes(d.action))return null;
       return {action:d.action,x:clamp(Number(d.x)||home.x,bounds.minX,bounds.maxX),z:clamp(Number(d.z)||home.z,bounds.minZ,bounds.maxZ),speech:typeof d.speech==='string'?d.speech.slice(0,180):''};
     }catch{return null;}
   }
@@ -108,7 +111,7 @@ export function createSurvivorNPC(THREE, scene, loader, beach, options = {}) {
       const snapshot=environment(options.getPlayerPosition?.(),options.getEnvironment?.()||{});
       const prompt='El jugador te dice: '+text+'\nObservación actual del entorno: '+JSON.stringify(snapshot)+'\nContestale directamente, de forma natural y coherente. Si hay peligro cercano, podés mencionarlo solo si está en los datos.';
       const answer=await askModel(prompt,170,.82);
-      if(answer){history.push({role:'user',content:prompt},{role:'assistant',content:answer});addMessage(answer);speak(answer);}
+      if(answer){history.push({role:'user',content:prompt},{role:'assistant',content:answer});saveMemory();addMessage(answer);speak(answer);}
       status('IA encendida · decido mis propias acciones');
     }catch(e){console.error(e);addMessage('Perdón, tuve un problema al responder.');status('IA activa · error al responder');}
     finally{modelBusy=false;}
@@ -121,6 +124,12 @@ export function createSurvivorNPC(THREE, scene, loader, beach, options = {}) {
     if(bones.head)bones.head.rotation.y=(rest.get(bones.head)?.y||0)+Math.sin(time*.72)*.035;
     if(!walkAction){if(bones.leftLeg)bones.leftLeg.rotation.x=(rest.get(bones.leftLeg)?.x||0)+gait*.42;if(bones.rightLeg)bones.rightLeg.rotation.x=(rest.get(bones.rightLeg)?.x||0)-gait*.42;if(bones.leftArm)bones.leftArm.rotation.x=(rest.get(bones.leftArm)?.x||0)-gait*.22;if(bones.rightArm)bones.rightArm.rotation.x=(rest.get(bones.rightArm)?.x||0)+gait*.22;}
   }
+  function applyProceduralPose(kind,time){
+    const head=bones.head,spine=bones.spine,hips=bones.hips,leftLeg=bones.leftLeg,rightLeg=bones.rightLeg;
+    if(kind==='look'&&head)head.rotation.y=(rest.get(head)?.y||0)+Math.sin(time*1.8)*.48;
+    if(kind==='crouch'||kind==='fish'||kind==='hunt'){if(hips)hips.rotation.x=(rest.get(hips)?.x||0)-.32;if(spine)spine.rotation.x=(rest.get(spine)?.x||0)+.18;if(leftLeg)leftLeg.rotation.x=(rest.get(leftLeg)?.x||0)+.42;if(rightLeg)rightLeg.rotation.x=(rest.get(rightLeg)?.x||0)+.42;if(head)head.rotation.x=(rest.get(head)?.x||0)+Math.sin(time*1.2)*.035;}
+    if((kind==='fish'||kind==='hunt')&&bones.rightArm)bones.rightArm.rotation.x=(rest.get(bones.rightArm)?.x||0)+Math.sin(time*2.4)*.16;
+  }
   function update(dt,time,playerPosition,env={}){
     if(!ready||failed)return;clock+=dt;if(mixer)mixer.update(dt);
     if(engine)think(playerPosition,env);
@@ -131,7 +140,7 @@ export function createSurvivorNPC(THREE, scene, loader, beach, options = {}) {
       else{
         const desired=Math.atan2(dx,dz),delta=Math.atan2(Math.sin(desired-root.rotation.y),Math.cos(desired-root.rotation.y));
         root.rotation.y+=delta*Math.min(1,dt*2.7);
-        const speed=(mode==='flee'?2.7:mode==='approach'?1.15:1.05)*(1-clamp(Math.abs(delta)/Math.PI,0,.48));
+        const speed=(mode==='flee'||mode==='run'?2.7:mode==='approach'?1.15:1.05)*(1-clamp(Math.abs(delta)/Math.PI,0,.48));
         root.position.x+=Math.sin(root.rotation.y)*speed*dt;root.position.z+=Math.cos(root.rotation.y)*speed*dt;
         const bounded=beach.constrain?.(root.position)||root.position;
         root.position.x=clamp(bounded.x,bounds.minX,bounds.maxX);root.position.z=clamp(bounded.z,bounds.minZ,bounds.maxZ);
@@ -142,8 +151,11 @@ export function createSurvivorNPC(THREE, scene, loader, beach, options = {}) {
     }
     const floor=groundAt(root.position.x,root.position.z);root.position.y+=(floor-root.position.y)*Math.min(1,dt*12);
     const walking=!!target;moveBlend+=( (walking?1:0)-moveBlend)*(1-Math.exp(-dt*7));
-    if(walking)fadeTo(walkAction,.28);else fadeTo(idleAction,.45);
-    pose(clock,walking);root.visible=true;
+    const selected=walking?(mode==='run'||mode==='flee'?(runAction||walkAction):walkAction):mode==='look'?lookAction:mode==='crouch'?crouchAction:mode==='fish'?fishAction:mode==='hunt'?huntAction:idleAction;
+    if(selected)fadeTo(selected,walking?.24:.38);else fadeTo(walking?walkAction:idleAction,.38);
+    pose(clock,walking);if(!walking&&(mode==='look'||mode==='crouch'||mode==='fish'||mode==='hunt'))applyProceduralPose(mode,clock);
+    if(engine&&playerPosition&&distance<4&&lastPlayerDistance>=4&&clock-lastGreetingAt>45){lastGreetingAt=clock;ui.body.style.display='block';addMessage('¡Ey! Qué bueno verte por acá.');speak('¡Ey! Qué bueno verte por acá.');}
+    lastPlayerDistance=distance;root.visible=true;
   }
   loader.load(MODEL_PATH,gltf=>{
     try{
@@ -152,11 +164,11 @@ export function createSurvivorNPC(THREE, scene, loader, beach, options = {}) {
       if(!Number.isFinite(h)||h<.001)throw new Error('El modelo de Daniel no tiene una altura válida.');
       model.scale.multiplyScalar(HEIGHT/h);model.updateMatrixWorld(true);box.setFromObject(model,true);model.position.y-=box.min.y;
       const center=box.getCenter(new THREE.Vector3());model.position.x-=center.x;model.position.z-=center.z;model.updateMatrixWorld(true);
-      model.traverse(o=>{if(!o.isBone)return;const n=o.name.toLowerCase();if(/spine/.test(n)&&!bones.spine)bones.spine=o;if(/head/.test(n)&&!bones.head)bones.head=o;if(/left.*(thigh|upleg|leg)$/.test(n)||/thigh.*left/.test(n))bones.leftLeg=o;if(/right.*(thigh|upleg|leg)$/.test(n)||/thigh.*right/.test(n))bones.rightLeg=o;if(/left.*upper.?arm/.test(n))bones.leftArm=o;if(/right.*upper.?arm/.test(n))bones.rightArm=o;rest.set(o,o.rotation.clone());});
+      model.traverse(o=>{if(!o.isBone)return;const n=o.name.toLowerCase();if(/spine/.test(n)&&!bones.spine)bones.spine=o;if(/head/.test(n)&&!bones.head)bones.head=o;if(/hips|pelvis/.test(n)&&!bones.hips)bones.hips=o;if(/left.*(thigh|upleg|leg)$/.test(n)||/thigh.*left/.test(n))bones.leftLeg=o;if(/right.*(thigh|upleg|leg)$/.test(n)||/thigh.*right/.test(n))bones.rightLeg=o;if(/left.*upper.?arm/.test(n))bones.leftArm=o;if(/right.*upper.?arm/.test(n))bones.rightArm=o;rest.set(o,o.rotation.clone());});
       mixer=new THREE.AnimationMixer(model);const clips=[...(gltf.animations||[])];
       try{const edits=JSON.parse(localStorage.getItem('survivalPlaya.animationEdits.v1')||'{}');for(const edit of Object.values(edits))if(edit?.clip?.tracks?.length){try{clips.push(THREE.AnimationClip.parse(edit.clip));}catch(e){console.warn('[Daniel] Animación manual inválida:',e);}}}catch{}
       const actions=clips.map(c=>({name:c.name.toLowerCase(),action:mixer.clipAction(c)}));
-      walkAction=actions.find(a=>/(walk|caminar|andar|walking)/.test(a.name))?.action||null;idleAction=actions.find(a=>/(idle|quieto|standing|stand)/.test(a.name))?.action||null;
+      walkAction=actions.find(a=>/(walk|caminar|andar|walking)/.test(a.name))?.action||null;runAction=actions.find(a=>/(run|running|correr|sprint)/.test(a.name))?.action||null;idleAction=actions.find(a=>/(idle|quieto|standing|stand)/.test(a.name))?.action||null;lookAction=actions.find(a=>/(look|looking|search|scan|mirar)/.test(a.name))?.action||null;crouchAction=actions.find(a=>/(crouch|squat|agach|duck)/.test(a.name))?.action||null;fishAction=actions.find(a=>/(fish|fishing|pescar)/.test(a.name))?.action||null;huntAction=actions.find(a=>/(hunt|hunting|cazar)/.test(a.name))?.action||null;
       root.position.set(home.x,groundAt(home.x,home.z),home.z);root.rotation.y=rand(0,Math.PI*2);ready=true;root.visible=true;
       status('Cerebro apagado · Daniel espera la IA');
       console.info('[Daniel] Modelo cargado. No camina hasta que el modelo de IA decida una acción.',{walk:!!walkAction,idle:!!idleAction,clips:clips.map(c=>c.name)});
