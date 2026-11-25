@@ -471,7 +471,7 @@ async function initializeWorld(){
  player.position.set(spawnX,spawnY+.035,spawnZ);player.rotation.set(0,0,0);yaw=0;pitch=-.12;onGround=true;vy=0;fallMode='none';
  wildlife.populateIsland?.(6);
  // Daniel aparece en el claro de la pradera, detrás de la montaña.
- try { danielNPC=createSurvivorNPC(THREE,scene,loader,beach,{onError:e=>console.warn('Daniel no disponible:',e)}); }
+ try { danielNPC=createSurvivorNPC(THREE,scene,loader,beach,{onError:e=>console.warn('Daniel no disponible:',e),getPlayerPosition:()=>player.position,getEnvironment:()=>({animals:wildlife?.animals||[],sharks:sharkSystem?.sharks||[],weather:stormActive?'tormenta':rainActive?'lluvia':'despejado',time:$('dayClock')?.textContent||''})}); }
  catch(e) { console.warn('No se pudo iniciar a Daniel:',e); }
  camera.position.set(spawnX,spawnY+4.2,spawnZ+7.5);camera.lookAt(spawnX,spawnY+1.1,spawnZ);$('loading').style.display='none';
 }
@@ -3935,7 +3935,7 @@ function update(dt, time) {
   updateFishFX(dt);
   updateFishPrompt();
   wildlife.update(dt,time);
-  danielNPC?.update(dt,time,player.position);
+  danielNPC?.update(dt,time,player.position,{animals:wildlife?.animals||[],sharks:sharkSystem?.sharks||[],weather:stormActive?'tormenta':rainActive?'lluvia':'despejado',time:$('dayClock')?.textContent||''});
   sharkSystem?.update(dt,time,player.position);
   if(physics){
     const boat=wildlife.getBoat?.(); if(boat){physics.syncKinematicBox('cargo-boat',{x:boat.position.x,y:boat.position.y+.42,z:boat.position.z},{x:1.85,y:.42,z:4.65},boat.rotation.y);}else physics.remove('cargo-boat');
