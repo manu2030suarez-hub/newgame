@@ -1120,20 +1120,20 @@ function create(scene, renderer, opts = {}) {
     const sz = shoreZ(p.x) + SWIM; if (p.z < sz) p.z = sz;
     let sweptRockHit=false;
     const R_BODY = 0.42;
-    if(previous && (rockMeshes.length || houseWallMeshes.length)){
+    if(previous && rockMeshes.length){
       const dx=p.x-previous.x,dz=p.z-previous.z,dist=Math.hypot(dx,dz);
       if(dist>.0001 && dist < 12){
         rockMoveDir.set(dx/dist,0,dz/dist);
         for(const h of [.25,.65,1.10,1.55]){
           rockMoveOrigin.set(previous.x,p.y+h,previous.z);
           rockSideRaycaster.set(rockMoveOrigin,rockMoveDir);rockSideRaycaster.near=0;rockSideRaycaster.far=dist+R_BODY;
-          const hits=rockSideRaycaster.intersectObjects([...rockMeshes,...houseWallMeshes],false);
+          const hits=rockSideRaycaster.intersectObjects(rockMeshes,false);
           const hit=hits.find(v=>{const n=v.face?v.face.normal.clone().transformDirection(v.object.matrixWorld):null;return n&&Math.abs(n.y)<.82;});
           if(hit){const allowed=Math.max(0,hit.distance-R_BODY-.01);p.x=previous.x+rockMoveDir.x*allowed;p.z=previous.z+rockMoveDir.z*allowed;sweptRockHit=true;break;}
         }
       }
     }
-    if (rockMeshes.length || houseWallMeshes.length) {
+    if (rockMeshes.length) {
       for (let iter = 0; iter < 2; iter++) {
         for (let a = 0; a < 8; a++) {
           const ang = (a / 8) * Math.PI * 2;
@@ -1141,7 +1141,7 @@ function create(scene, renderer, opts = {}) {
           rockMoveOrigin.set(p.x, p.y + 0.85, p.z);
           rockSideRaycaster.set(rockMoveOrigin, rockMoveDir);
           rockSideRaycaster.near = 0; rockSideRaycaster.far = R_BODY;
-          const hits = rockSideRaycaster.intersectObjects([...rockMeshes,...houseWallMeshes], false);
+          const hits = rockSideRaycaster.intersectObjects(rockMeshes, false);
           const hit = hits.find(v => {
             const n = v.face ? v.face.normal.clone().transformDirection(v.object.matrixWorld) : null;
             return n && Math.abs(n.y) < 0.82;
