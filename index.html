@@ -162,6 +162,7 @@ import { MeshoptDecoder } from 'https://cdn.jsdelivr.net/npm/three@0.161.0/examp
 import * as SkeletonUtils from 'https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/utils/SkeletonUtils.js';
 import { BeachWorld } from './beach.js';
 import { createSharkSystem } from './shark-system.js';
+import { createOceanLife } from './ocean-life.js';
 import { createSurvivorNPC } from './survivor-npc.js';
 import { FishModel } from './fish-model.js';
 import { createCave } from './cave.js';
@@ -216,7 +217,7 @@ applyGraphicsQuality('auto');
 
 // Playa: arena, mar, cielo, palmeras y pasto (ver beach.js)
 let beach=null; // La isla se crea únicamente al comenzar la historia.
-let sharkSystem=null;
+let sharkSystem=null, oceanLife=null;
 
 // Ciclo ambiental: día completo en 8 minutos de juego.
 const nightLight = new THREE.DirectionalLight(0x9bb8e8, 0); nightLight.position.set(0, 30, 0); scene.add(nightLight);
@@ -439,7 +440,7 @@ async function initializeWorld(){
  if(worldInitialized)return;
  $('loadmsg').textContent='Cargando la isla…'; $('loading').style.display='flex';
  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
- beach=BeachWorld.create(scene,renderer,{sun,hemi,gltfLoader:loader});try{sharkSystem=createSharkSystem(THREE,scene,beach,{gltfLoader:loader,damagePlayer:(amount,message)=>damagePlayer(amount,message)});}catch(e){console.warn('Tiburones no disponibles:',e);}try{cave=createCave(THREE,scene,beach,{x:-48});}catch(e){console.warn('Cueva no disponible',e);}
+ beach=BeachWorld.create(scene,renderer,{sun,hemi,gltfLoader:loader});try{sharkSystem=createSharkSystem(THREE,scene,beach,{gltfLoader:loader,damagePlayer:(amount,message)=>damagePlayer(amount,message)});}catch(e){console.warn('Tiburones no disponibles:',e);}try{oceanLife=createOceanLife(THREE,scene,beach,loader);}catch(e){console.warn('Fauna marina no disponible:',e);}try{cave=createCave(THREE,scene,beach,{x:-48});}catch(e){console.warn('Cueva no disponible',e);}
  scatterInitialResources();
  try{setupFish();}catch(e){console.warn('Peces:',e);}
  try{physics=await createPhysicsSystem(THREE,player,beach);console.info('[Física V24] Rapier inicializado',physics.stats);}catch(e){console.warn('Rapier no disponible; se usa controlador de respaldo.',e);physics=null;}
@@ -3937,6 +3938,7 @@ function update(dt, time) {
   wildlife.update(dt,time);
   danielNPC?.update(dt,time,player.position,{animals:wildlife?.animals||[],sharks:sharkSystem?.sharks||[],weather:stormActive?'tormenta':rainActive?'lluvia':'despejado',time:$('dayClock')?.textContent||''});
   sharkSystem?.update(dt,time,player.position);
+  oceanLife?.update(dt,time);
   if(physics){
     const boat=wildlife.getBoat?.(); if(boat){physics.syncKinematicBox('cargo-boat',{x:boat.position.x,y:boat.position.y+.42,z:boat.position.z},{x:1.85,y:.42,z:4.65},boat.rotation.y);}else physics.remove('cargo-boat');
     const gangway=wildlife.getGangway?.();if(gangway){physics.syncKinematicBox('boat-gangway',{x:gangway.position.x,y:gangway.position.y,z:gangway.position.z},{x:.92,y:.12,z:(gangway.userData.length||1)/2},gangway.rotation.y);}else physics.remove('boat-gangway');
