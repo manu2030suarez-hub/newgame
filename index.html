@@ -163,7 +163,6 @@ import * as SkeletonUtils from 'https://cdn.jsdelivr.net/npm/three@0.161.0/examp
 import { BeachWorld } from './beach.js';
 import { createSharkSystem } from './shark-system.js';
 import { createOceanLife } from './ocean-life.js';
-import { createSurvivorNPC } from './survivor-npc.js';
 import { FishModel } from './fish-model.js';
 import { createCave } from './cave.js';
 
@@ -231,7 +230,7 @@ const moonGlow=new THREE.PointLight(0x9db8e8,0,85,2); scene.add(moonGlow);
 
 // ---------- Estado ----------
 const player = new THREE.Group(); scene.add(player);   // el "frente" del jugador es siempre +Z local
-let physics=null, wildlife=null, danielNPC=null, worldInitialized=false;
+let physics=null, wildlife=null, worldInitialized=false;
 let character = null, mixer = null, actions = {}, currentAction = null, walkClip = null, runClip = null;
 let loaded = false, gameStarted = false, firstPerson = false, soundOn = true;
 let savedHandPoses = {};
@@ -382,7 +381,7 @@ function updateStoryMissions(){
  const missionDesc=$('storyMission').querySelector('span'),missionFill=$('storyMissionFill');
  if(missionDesc&&missionDesc.textContent!==detail)missionDesc.textContent=detail;
  if(missionFill)missionFill.style.width=progress+'%';
- if(storyMissionIndex===0)complete=dWreck<6.5;
+ if(storyMissionIndex===0)complete=dWreck<4.2;
  else if(storyMissionIndex===1)complete=inventory.branch>=5&&inventory.stone>=4;
  else if(storyMissionIndex===2)complete=campfires.length>0;
  else if(storyMissionIndex===3)complete=inventory.fishingRod&&hasCaughtFish;
@@ -471,9 +470,6 @@ async function initializeWorld(){
  const spawnY=beach.surfaceHeightAt?beach.surfaceHeightAt(spawnX,spawnZ):beach.heightAt(spawnX,spawnZ);
  player.position.set(spawnX,spawnY+.035,spawnZ);player.rotation.set(0,0,0);yaw=0;pitch=-.12;onGround=true;vy=0;fallMode='none';
  wildlife.populateIsland?.(6);
- // Daniel aparece en el claro de la pradera, detrás de la montaña.
- try { danielNPC=createSurvivorNPC(THREE,scene,loader,beach,{onError:e=>console.warn('Daniel no disponible:',e),getPlayerPosition:()=>player.position,getEnvironment:()=>({animals:wildlife?.animals||[],sharks:sharkSystem?.sharks||[],weather:stormActive?'tormenta':rainActive?'lluvia':'despejado',time:$('dayClock')?.textContent||''})}); }
- catch(e) { console.warn('No se pudo iniciar a Daniel:',e); }
  camera.position.set(spawnX,spawnY+4.2,spawnZ+7.5);camera.lookAt(spawnX,spawnY+1.1,spawnZ);$('loading').style.display='none';
 }
 
@@ -3936,7 +3932,6 @@ function update(dt, time) {
   updateFishFX(dt);
   updateFishPrompt();
   wildlife.update(dt,time);
-  danielNPC?.update(dt,time,player.position,{animals:wildlife?.animals||[],sharks:sharkSystem?.sharks||[],weather:stormActive?'tormenta':rainActive?'lluvia':'despejado',time:$('dayClock')?.textContent||''});
   sharkSystem?.update(dt,time,player.position);
   oceanLife?.update(dt,time);
   if(physics){
