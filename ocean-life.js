@@ -24,7 +24,7 @@ export function createOceanLife(THREE, scene, beach, loader) {
       const bounds=new THREE.Box3().setFromObject(template);
       const dimensions=bounds.getSize(new THREE.Vector3());
       const center=bounds.getCenter(new THREE.Vector3());
-      const longest=Math.max(dimensions.x,dimensions.y,dimensions.z,.001);
+      const horizontalLength=Math.max(dimensions.x,dimensions.z,.001);
       for(let i=0;i<spec.count;i++){
         const [xOffset]=spec.positions[i]||[0];
         const x=xOffset+(i===0?0:(i-1)*3);
@@ -36,7 +36,7 @@ export function createOceanLife(THREE, scene, beach, loader) {
         // Igual que el tiburón: clonar el scene del GLB, centrarlo en un grupo
         // y aplicar la escala de ajuste en un grupo padre.
         const fit=new THREE.Group();
-        fit.scale.setScalar(spec.size/longest);
+        fit.scale.setScalar(spec.size/horizontalLength);
         if(dimensions.x>dimensions.z)fit.rotation.y=Math.PI/2;
         const model=template.clone(true);
         model.position.set(-center.x,-center.y,-center.z);
