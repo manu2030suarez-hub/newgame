@@ -28,7 +28,7 @@ export function createOceanLife(THREE, scene, beach, loader) {
         const shore=beach.shoreZ(x);
         const root=new THREE.Group();
         root.name='ocean-'+spec.file.replace('.glb','')+'-'+i;
-        root.position.set(x,-spec.depth,shore-spec.shore-(i%2)*3);
+        root.position.set(x,-Math.min(.55,spec.depth*.18),shore-spec.shore-(i%2)*3);
         const model=template.clone(true);
         model.position.set(-center.x,-center.y,-center.z);
         const fit=new THREE.Group();
@@ -36,7 +36,7 @@ export function createOceanLife(THREE, scene, beach, loader) {
         // Normaliza el eje largo de los animales para que naden en el plano del mar.
         if(size.x>size.z) fit.rotation.y=Math.PI/2;
         fit.add(model);root.add(fit);
-        model.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;}});
+        model.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;o.renderOrder=3;}});
         scene.add(root);
         const mixer=gltf.animations?.length?new THREE.AnimationMixer(model):null;
         if(mixer)gltf.animations.forEach(clip=>mixer.clipAction(clip).play());
