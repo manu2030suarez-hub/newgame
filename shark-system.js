@@ -4,7 +4,7 @@ export function createSharkSystem(THREERef, scene, beach, options = {}) {
   const gltfLoader = options.gltfLoader;
   let sharkTemplate = null;
   if (gltfLoader) {
-    gltfLoader.load('./shark.glb', gltf => {
+    gltfLoader.load('./oceano/shark.glb', gltf => {
       sharkTemplate = gltf.scene;
       sharkTemplate.updateMatrixWorld(true);
       const bounds = new T.Box3().setFromObject(sharkTemplate);
