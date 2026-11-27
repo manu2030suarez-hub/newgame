@@ -3953,11 +3953,11 @@ function update(dt, time) {
   if(buildMode)updateBuildGhost();
   updateBuiltDoors(dt);
   beach.update(dt, time, player.position, camera, Math.min(1,stormWind/14));if(cave)cave.update(dt,time);
-  if(beach.consumeWaveImpact){const wave=beach.consumeWaveImpact();if(wave&&fallMode==='none'&&!wildlife?.isMounted?.()&&!(cave?.isInside?.(player.position.x,player.position.z))){
-    const shoreDist=player.position.z-beach.shoreZ(player.position.x),deepWater=shoreDist<-.9;
+  if(beach.consumeWaveImpact){const wave=beach.consumeWaveImpact();if(wave&&player.position.y<=-.95&&fallMode==='none'&&!wildlife?.isMounted?.()&&!(cave?.isInside?.(player.position.x,player.position.z))){
+    const shoreDist=player.position.z-beach.shoreZ(player.position.x),deepWater=shoreDist<-12;
     const elevated=player.position.y-beach.heightAt(player.position.x,player.position.z)>.48;
     const force=wave.strength*(deepWater?1.22:1)*(elevated?1.18:1);
-    const hardFall=force>(elevated?.30:.72);
+    const hardFall=force>1.08;
     waveVelX=wave.dirX*(4.2+force*5.0);waveVelZ=wave.dirZ*(4.8+force*5.8);
     fallMode=hardFall?'fall':'stagger';fallT=0;fallLean=0;
     if(hardFall){dropHandsOnFall();onGround=false;vy=.25+force*.28;jumpState='air';jumpT=0;fallT=0;damagePlayer(deepWater?7:5,'¡Una ola gigante te golpeó! Perdiste el equilibrio y te arrastró por el suelo.');}
