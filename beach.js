@@ -753,10 +753,10 @@ function create(scene, renderer, opts = {}) {
         transformed.x+=sin(uTime*1.8+instanceMatrix[3].x*.7+instanceMatrix[3].z*.5)*.07*uv.y*uv.y;`);
   };
   const grassList = [], grnd = mulberry32(555);
-  for (let tries = 0; grassList.length < 900 && tries < 6000; tries++) {
+  for (let tries = 0; grassList.length < 1800 && tries < 11000; tries++) {
     const x = (grnd() - .5) * 300, d = 5 + grnd() * 30, z = shoreZ(x) + d;
     const mountainClear = ss(104, 132, Math.hypot(x - 76, z - 82));
-    const p = ss(12, 40, d) * (.35 + .65 * fbm2(x * .05, z * .05)) * mountainClear;
+    const p = ss(7, 38, d) * (.48 + .52 * fbm2(x * .05, z * .05)) * mountainClear;
     if (grnd() > p) continue;
     grassList.push({ x, z, s: .7 + grnd() * .7, r: grnd() * Math.PI });
   }
@@ -775,7 +775,7 @@ function create(scene, renderer, opts = {}) {
   jungleGroup.name = 'deep-jungle';
   scene.add(jungleGroup);
   const jungleRand = mulberry32(731942);
-  const jungleCenter = { x: 94, z: 137 };
+  const jungleCenter = { x: 94, z: shoreZ(94) + 20 };
   const jungleTrees = [];
   const jungleTreeCount = 0; // Árboles de la selva ocultos temporalmente.
   const jungleTrunkGeo = new THREE.CylinderGeometry(.24, .62, 1, 9, 3);
@@ -851,8 +851,7 @@ function create(scene, renderer, opts = {}) {
   const fallenMat = new THREE.MeshStandardMaterial({ color: 0x493b2b, roughness: 1 });
   const fallenLogs = new THREE.InstancedMesh(fallenGeo, fallenMat, 16);
   for (let k = 0; k < 16; k++) {
-    const a = jungleRand() * Math.PI * 2, r = 8 + Math.sqrt(jungleRand()) * 61;
-    const x = jungleCenter.x + Math.cos(a) * r, z = jungleCenter.z + Math.sin(a) * r * .32;
+    const x = 28 + jungleRand() * 132, z = shoreZ(x) + 9 + jungleRand() * 25;
     const y = terrainH(x, z) + .25, length = 2.2 + jungleRand() * 3.6;
     junglePos.set(x, y, z); jungleScale.set(.8 + jungleRand() * .4, length, .8 + jungleRand() * .4);
     jungleQuat.setFromEuler(new THREE.Euler(0, jungleRand() * Math.PI * 2, Math.PI / 2 + (jungleRand() - .5) * .18));
@@ -877,12 +876,13 @@ function create(scene, renderer, opts = {}) {
     let placed = 0, tries = 0;
     while (placed < count && tries < count * 24) {
       tries++;
-      const angle = rand() * Math.PI * 2;
-      const radius = 5 + Math.sqrt(rand()) * 68;
-      const x = jungleCenter.x + Math.cos(angle) * radius;
-      const z = jungleCenter.z + Math.sin(angle) * radius * .31;
-      if (x < 15 || x > 173 || z < 112 || z > 148) continue;
-      if (Math.hypot(x - 94, z - 145) < 7) continue;
+      const x = 28 + rand() * 132;
+      const shoreOffset = 7 + rand() * 34;
+      const z = shoreZ(x) + shoreOffset;
+      // Solo costa baja y arena: descartar laderas, montaña y zonas de terreno empinado.
+      if (Math.hypot(terrainH(x + 1, z) - terrainH(x - 1, z), terrainH(x, z + 1) - terrainH(x, z - 1)) > 1.25) continue;
+      if (Math.hypot(x - 94, z - (shoreZ(94) + 5.5)) < 12) continue;
+      if (Math.hypot(x - 102, z - (shoreZ(102) + 7.5)) < 5.5) continue;
       const plant = source.clone(true);
       const targetHeight = minHeight + rand() * (maxHeight - minHeight);
       const scale = targetHeight / sourceHeight;
@@ -917,14 +917,21 @@ function create(scene, renderer, opts = {}) {
   // Vegetación GLB del usuario: árboles altos, helechos, arbustos y plantas tropicales.
   const forestAssets = [
     // Árboles grandes: más ejemplares para que el bosque se vea poblado desde lejos.
-    ['arboles/bald-cypress-v1-lod0.glb', 15, 8.0, 12.5, 4201],
-    ['arboles/mangrove-tree-v1-lod1.glb', 18, 6.5, 10.0, 4202],
-    ['arboles/umbrella-acacia-v1-lod0.glb', 12, 7.5, 11.5, 4203],
-    ['arboles/strangler-fig-v1-lod1.glb', 12, 7.0, 10.5, 4204],
+    ['arboles/bald-cypress-v1-lod0.glb', 18, 8.0, 12.5, 4201],
+    ['arboles/mangrove-tree-v1-lod1.glb', 20, 6.5, 10.0, 4202],
+    ['arboles/umbrella-acacia-v1-lod0.glb', 14, 7.5, 11.5, 4203],
+    ['arboles/strangler-fig-v1-lod1.glb', 14, 7.0, 10.5, 4204],
     ['arboles/italian-cypress-young-v1-lod0.glb', 10, 6.0, 9.0, 4207],
     ['arboles/grey-alder-v1-lod1.glb', 12, 6.0, 9.5, 4208],
     ['arboles/aspen-v1-lod0.glb', 8, 7.0, 10.0, 4209],
-    ['arboles/tree-fern-v1-lod0.glb', 22, 2.0, 3.6, 4205],
+    ['arboles/tree-fern-v1-lod0.glb', 28, 2.0, 3.6, 4205],
+    ['arboles/apple-tree-v1-lod0.glb', 8, 6.0, 9.0, 4210],
+    ['arboles/european-beech-v1-lod0.glb', 9, 7.0, 10.5, 4211],
+    ['arboles/lombardy-poplar-v1-lod0.glb', 9, 8.0, 12.0, 4212],
+    ['arboles/plane-tree-v1-lod0.glb', 8, 7.5, 11.0, 4213],
+    ['arboles/rowan-v1-lod0.glb', 8, 5.5, 8.5, 4214],
+    ['arboles/silver-birch-v1-lod1.glb', 8, 6.5, 9.5, 4215],
+    ['arboles/scots-pine-v1-lod1.glb', 8, 7.0, 10.0, 4216],
     // Helechos, plantas tropicales, arbustos y raíces repartidos entre los árboles.
     ['plantas/heliconia-clump-v1-lod0.glb', 30, 1.0, 2.1, 5201],
     ['plantas/harts-tongue-fern-v1-lod0.glb', 24, .9, 1.8, 5202],
@@ -934,7 +941,9 @@ function create(scene, renderer, opts = {}) {
     ['plantas/common-reed-v1-lod0.glb', 22, 1.2, 2.2, 5206],
     ['plantas/hanging-vine-curtain-v1-lod0.glb', 18, 1.4, 2.8, 5207],
     ['plantas/nettle-clump-v1-lod0.glb', 20, .8, 1.6, 5208],
-    ['plantas/grazed-grass-tussock-v1-lod0.glb', 34, .35, .85, 5209]
+    ['plantas/grazed-grass-tussock-v1-lod0.glb', 90, .35, .85, 5209],
+    ['plantas/clover-patch-v1-lod0 (1).glb', 55, .25, .65, 5210],
+    ['plantas/sunflower-v1-lod0.glb', 14, 1.1, 1.9, 5211]
   ];
   for (const [path,count,minH,maxH,seed] of forestAssets) {
     jungleAssetLoader.load(new URL('./'+path, import.meta.url).href,
