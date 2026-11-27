@@ -753,10 +753,10 @@ function create(scene, renderer, opts = {}) {
         transformed.x+=sin(uTime*1.8+instanceMatrix[3].x*.7+instanceMatrix[3].z*.5)*.07*uv.y*uv.y;`);
   };
   const grassList = [], grnd = mulberry32(555);
-  for (let tries = 0; grassList.length < 1800 && tries < 11000; tries++) {
-    const x = (grnd() - .5) * 300, d = 5 + grnd() * 30, z = shoreZ(x) + d;
+  for (let tries = 0; grassList.length < 3000 && tries < 18000; tries++) {
+    const x = (grnd() - .5) * 300, d = 4 + grnd() * 54, z = shoreZ(x) + d;
     const mountainClear = ss(104, 132, Math.hypot(x - 76, z - 82));
-    const p = ss(7, 38, d) * (.48 + .52 * fbm2(x * .05, z * .05)) * mountainClear;
+    const p = ss(5, 54, d) * (.48 + .52 * fbm2(x * .05, z * .05)) * mountainClear;
     if (grnd() > p) continue;
     grassList.push({ x, z, s: .7 + grnd() * .7, r: grnd() * Math.PI });
   }
@@ -971,7 +971,9 @@ function create(scene, renderer, opts = {}) {
   }
   function setMuted(m) { muted = !!m; }
 
-  const SWIM = -19.4;
+  const SWIM = -19.4; // Profundidad normal de entrada al agua.
+  // En la costa del claro con pasto se permite avanzar bastante más mar adentro.
+  function localSwimDepth(x) { return SWIM - 24 * ss(12, 34, Math.abs(x - 94)); }
   // Las olas que pueden derribar al jugador solo actúan mar adentro,
   // cuando el nivel del agua ya supera aproximadamente su cintura.
   let waveImpactCooldown=0, waveImpactPending=null, nextBigWaveAt=22+Math.random()*18;
@@ -1042,7 +1044,7 @@ function create(scene, renderer, opts = {}) {
     if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.z)) return p;
     p.x = clamp(p.x, -150, 150); p.z = clamp(p.z, -260, 150);
     if (!Number.isFinite(p.y)) p.y = terrainH(p.x, p.z);
-    const sz = shoreZ(p.x) + SWIM; if (p.z < sz) p.z = sz;
+    const sz = shoreZ(p.x) + localSwimDepth(p.x); if (p.z < sz) p.z = sz;
     let sweptRockHit=false;
     const R_BODY = 0.42;
     if(previous && rockMeshes.length){
