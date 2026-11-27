@@ -467,7 +467,7 @@ async function initializeWorld(){
 });
  worldInitialized=true;
  // Inicio sobre arena firme, junto a la orilla y cerca del naufragio.
- const spawnX=106,spawnZ=138;
+ const spawnX=window.abandonedVillage?.spawn.x ?? 107,spawnZ=window.abandonedVillage?.spawn.z ?? 145;
  const spawnY=beach.surfaceHeightAt?beach.surfaceHeightAt(spawnX,spawnZ):beach.heightAt(spawnX,spawnZ);
  player.position.set(spawnX,spawnY+.035,spawnZ);player.rotation.set(0,0,0);yaw=0;pitch=-.12;onGround=true;vy=0;fallMode='none';
  wildlife.populateIsland?.(6);
