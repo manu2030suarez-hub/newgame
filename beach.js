@@ -882,7 +882,7 @@ function create(scene, renderer, opts = {}) {
       const x = jungleCenter.x + Math.cos(angle) * radius;
       const z = jungleCenter.z + Math.sin(angle) * radius * .31;
       if (x < 15 || x > 173 || z < 112 || z > 148) continue;
-      if (Math.hypot(x - 94, z - 145) < 14) continue;
+      if (Math.hypot(x - 94, z - 145) < 7) continue;
       const plant = source.clone(true);
       const targetHeight = minHeight + rand() * (maxHeight - minHeight);
       const scale = targetHeight / sourceHeight;
@@ -916,17 +916,25 @@ function create(scene, renderer, opts = {}) {
     error => console.error('No se pudo cargar glowcap-cluster-standard.glb', error));
   // Vegetación GLB del usuario: árboles altos, helechos, arbustos y plantas tropicales.
   const forestAssets = [
-    ['arboles/bald-cypress-v1-lod0.glb', 7, 7.5, 10.5, 4201],
-    ['arboles/mangrove-tree-v1-lod1.glb', 9, 5.5, 8.0, 4202],
-    ['arboles/umbrella-acacia-v1-lod0.glb', 5, 7.0, 10.0, 4203],
-    ['arboles/strangler-fig-v1-lod1.glb', 5, 6.0, 9.0, 4204],
-    ['arboles/tree-fern-v1-lod0.glb', 14, 1.8, 3.0, 4205],
-    ['plantas/heliconia-clump-v1-lod0.glb', 18, .9, 1.8, 5201],
-    ['plantas/harts-tongue-fern-v1-lod0.glb', 12, .8, 1.5, 5202],
-    ['plantas/hazel-shrub-v1-lod0.glb', 12, .8, 1.6, 5203],
-    ['plantas/swamp-root-tangle-v1-lod0.glb', 14, .7, 1.4, 5204],
-    ['plantas/bilberry-bush-v1-lod0.glb', 12, .6, 1.2, 5205],
-    ['plantas/common-reed-v1-lod0.glb', 14, 1.0, 2.0, 5206]
+    // Árboles grandes: más ejemplares para que el bosque se vea poblado desde lejos.
+    ['arboles/bald-cypress-v1-lod0.glb', 15, 8.0, 12.5, 4201],
+    ['arboles/mangrove-tree-v1-lod1.glb', 18, 6.5, 10.0, 4202],
+    ['arboles/umbrella-acacia-v1-lod0.glb', 12, 7.5, 11.5, 4203],
+    ['arboles/strangler-fig-v1-lod1.glb', 12, 7.0, 10.5, 4204],
+    ['arboles/italian-cypress-young-v1-lod0.glb', 10, 6.0, 9.0, 4207],
+    ['arboles/grey-alder-v1-lod1.glb', 12, 6.0, 9.5, 4208],
+    ['arboles/aspen-v1-lod0.glb', 8, 7.0, 10.0, 4209],
+    ['arboles/tree-fern-v1-lod0.glb', 22, 2.0, 3.6, 4205],
+    // Helechos, plantas tropicales, arbustos y raíces repartidos entre los árboles.
+    ['plantas/heliconia-clump-v1-lod0.glb', 30, 1.0, 2.1, 5201],
+    ['plantas/harts-tongue-fern-v1-lod0.glb', 24, .9, 1.8, 5202],
+    ['plantas/hazel-shrub-v1-lod0.glb', 24, 1.0, 2.0, 5203],
+    ['plantas/swamp-root-tangle-v1-lod0.glb', 28, .8, 1.7, 5204],
+    ['plantas/bilberry-bush-v1-lod0.glb', 24, .8, 1.6, 5205],
+    ['plantas/common-reed-v1-lod0.glb', 22, 1.2, 2.2, 5206],
+    ['plantas/hanging-vine-curtain-v1-lod0.glb', 18, 1.4, 2.8, 5207],
+    ['plantas/nettle-clump-v1-lod0.glb', 20, .8, 1.6, 5208],
+    ['plantas/grazed-grass-tussock-v1-lod0.glb', 34, .35, .85, 5209]
   ];
   for (const [path,count,minH,maxH,seed] of forestAssets) {
     jungleAssetLoader.load(new URL('./'+path, import.meta.url).href,
