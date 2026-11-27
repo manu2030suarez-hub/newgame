@@ -2,8 +2,8 @@
 export function createAbandonedVillage(THREE, scene, beach, loader) {
   const root=new THREE.Group();
   root.name='Pueblo abandonado - casa Swamp Shack';
-  const house={x:94,z:beach.shoreZ(94)+4.8};
-  const spawn={x:102,z:beach.shoreZ(102)+6.2};
+  const house={x:94,z:beach.shoreZ(94)+5.5};
+  const spawn={x:102,z:beach.shoreZ(102)+7.5};
   root.position.set(0,0,0);
   scene.add(root);
 
