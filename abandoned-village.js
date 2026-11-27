@@ -2,8 +2,8 @@
 export function createAbandonedVillage(THREE, scene, beach, loader) {
   const root=new THREE.Group();
   root.name='Pueblo abandonado - casa Swamp Shack';
-  const house={x:94,z:145};
-  const spawn={x:107,z:145};
+  const house={x:94,z:beach.shoreZ(94)+4.8};
+  const spawn={x:108,z:beach.shoreZ(108)+5.8};
   root.position.set(0,0,0);
   scene.add(root);
 
@@ -33,6 +33,6 @@ export function createAbandonedVillage(THREE, scene, beach, loader) {
     console.info('Swamp Shack visible en claro de selva', {size,scale,position:houseGroup.position});
   },undefined,error=>console.error('Error cargando casa GLB:',error));
   // Mantener despejada la entrada y evitar que el personaje aparezca dentro del modelo.
-  beach.colliders.push({x:house.x,z:house.z,r:4.8});
+  beach.colliders.push({x:house.x,z:house.z,r:5.2});
   return {group:root,spawn,house};
 }
