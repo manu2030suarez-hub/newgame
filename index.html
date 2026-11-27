@@ -357,7 +357,7 @@ function finishStoryCinema(){
  else setStatus('Nueva misión: '+storyMissions[storyMissionIndex].title+'. '+storyMissions[storyMissionIndex].hint);
 }
 function startStoryCinema(){
- storyCinemaMode='intro';storyCinemaActive=true;storyCinemaStart=clock.elapsedTime;storyMissionTransitioning=true;
+ if(storyIntroFinished||storyCinemaActive)return;storyCinemaMode='intro';storyCinemaActive=true;storyCinemaStart=clock.elapsedTime;storyMissionTransitioning=true;
  $('storyCinema').classList.add('active');$('storyMission').classList.remove('show');gameStarted=false;
  $('cinemaCaption').dataset.line='intro';$('cinemaCaption').textContent='Costa uruguaya. Atlántico Sur. Una noche de tormenta.';$('cinemaCaption').classList.add('show');
  $('cinemaSkip').onclick=finishStoryCinema;
