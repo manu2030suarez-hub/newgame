@@ -882,7 +882,7 @@ function create(scene, renderer, opts = {}) {
       const x = jungleCenter.x + Math.cos(angle) * radius;
       const z = jungleCenter.z + Math.sin(angle) * radius * .31;
       if (x < 15 || x > 173 || z < 112 || z > 148) continue;
-      if (Math.hypot(x - 94, z - 145) < 8.5) continue;
+      if (Math.hypot(x - 94, z - 145) < 14) continue;
       const plant = source.clone(true);
       const targetHeight = minHeight + rand() * (maxHeight - minHeight);
       const scale = targetHeight / sourceHeight;
@@ -914,6 +914,25 @@ function create(scene, renderer, opts = {}) {
     gltf => scatterJungleAsset(gltf, 'glowcap-cluster-standard.glb', 42, .65, 1.35, 19371),
     undefined,
     error => console.error('No se pudo cargar glowcap-cluster-standard.glb', error));
+  // Vegetación GLB del usuario: árboles altos, helechos, arbustos y plantas tropicales.
+  const forestAssets = [
+    ['arboles/bald-cypress-v1-lod0.glb', 7, 7.5, 10.5, 4201],
+    ['arboles/mangrove-tree-v1-lod1.glb', 9, 5.5, 8.0, 4202],
+    ['arboles/umbrella-acacia-v1-lod0.glb', 5, 7.0, 10.0, 4203],
+    ['arboles/strangler-fig-v1-lod1.glb', 5, 6.0, 9.0, 4204],
+    ['arboles/tree-fern-v1-lod0.glb', 14, 1.8, 3.0, 4205],
+    ['plantas/heliconia-clump-v1-lod0.glb', 18, .9, 1.8, 5201],
+    ['plantas/harts-tongue-fern-v1-lod0.glb', 12, .8, 1.5, 5202],
+    ['plantas/hazel-shrub-v1-lod0.glb', 12, .8, 1.6, 5203],
+    ['plantas/swamp-root-tangle-v1-lod0.glb', 14, .7, 1.4, 5204],
+    ['plantas/bilberry-bush-v1-lod0.glb', 12, .6, 1.2, 5205],
+    ['plantas/common-reed-v1-lod0.glb', 14, 1.0, 2.0, 5206]
+  ];
+  for (const [path,count,minH,maxH,seed] of forestAssets) {
+    jungleAssetLoader.load(new URL('./'+path, import.meta.url).href,
+      gltf => scatterJungleAsset(gltf, path.split('/').pop(), count, minH, maxH, seed),
+      undefined, error => console.error('No se pudo cargar vegetación '+path,error));
+  }
 
   let audio = null, muted = false;
   function startAudio(ctx) {
