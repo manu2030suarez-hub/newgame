@@ -330,7 +330,7 @@ function finishLoading() {
   loaded = true;
 }
 
-let storyCinemaActive=false, storyCinemaStart=0, storyCinemaMode='intro';
+let storyCinemaActive=false, storyCinemaStart=0, storyCinemaMode='intro', storyIntroFinished=false;
 let storyMissionIndex=0, storyMissionTransitioning=false, storyChapterComplete=false, mission5FishCookedStart=0;
 const storyMissions=[
  {title:'DESPUÉS DEL NAUFRAGIO',desc:'Acércate a los restos del barco y revisa qué quedó después del impacto.',hint:'Camina hasta el naufragio de la orilla.',cinema:'El casco quedó partido contra la costa. Tal vez entre los restos haya algo que todavía sirva.'},
@@ -347,7 +347,7 @@ function showStoryMission(index){
 }
 function finishStoryCinema(){
  if(!storyCinemaActive)return;
- storyCinemaActive=false;$('storyCinema').classList.remove('active');camera.fov=56;camera.updateProjectionMatrix();
+ storyCinemaActive=false;if(storyCinemaMode==='intro')storyIntroFinished=true;$('storyCinema').classList.remove('active');camera.fov=56;camera.updateProjectionMatrix();
  if(storyCinemaMode==='intro'){storyMissionIndex=0;showStoryMission(0);}
  else if(storyCinemaMode==='mission'){showStoryMission(storyMissionIndex);}
  else{storyChapterComplete=true;showStoryMission(-1);}
@@ -467,7 +467,7 @@ async function initializeWorld(){
 });
  worldInitialized=true;
  // Inicio sobre arena firme, junto a la orilla y cerca del naufragio.
- const spawnX=18,spawnZ=beach.shoreZ(18)+3.5;
+ const spawnX=-136,spawnZ=beach.shoreZ(-136)+43;
  const spawnY=beach.surfaceHeightAt?beach.surfaceHeightAt(spawnX,spawnZ):beach.heightAt(spawnX,spawnZ);
  player.position.set(spawnX,spawnY+.035,spawnZ);player.rotation.set(0,0,0);yaw=0;pitch=-.12;onGround=true;vy=0;fallMode='none';
  wildlife.populateIsland?.(6);
