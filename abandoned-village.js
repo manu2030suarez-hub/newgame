@@ -29,10 +29,13 @@ export function createAbandonedVillage(THREE, scene, beach, loader) {
     houseGroup.add(model);
     model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
     root.add(houseGroup);
+    root.updateMatrixWorld(true);
+    const houseBounds = new THREE.Box3().setFromObject(houseGroup);
+    const houseSize = houseBounds.getSize(new THREE.Vector3());
+    // Colisión dimensionada automáticamente con la geometría real de la cabaña.
+    beach.colliders.push({x:house.x,z:house.z,r:Math.max(3.2,Math.max(houseSize.x,houseSize.z)*.36),bottom:houseBounds.min.y,top:houseBounds.max.y,glbAuto:'swamp-shack'});
     root.userData.loaded=true;
     console.info('Swamp Shack visible en claro de selva', {size,scale,position:houseGroup.position});
   },undefined,error=>console.error('Error cargando casa GLB:',error));
-  // Mantener despejada la entrada y evitar que el personaje aparezca dentro del modelo.
-  beach.colliders.push({x:house.x,z:house.z,r:5.2});
   return {group:root,spawn,house};
 }
