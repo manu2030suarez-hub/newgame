@@ -936,7 +936,9 @@ function create(scene, renderer, opts = {}) {
   function setMuted(m) { muted = !!m; }
 
   const SWIM = -19.4;
-  let waveImpactCooldown=0, waveImpactPending=null, nextBigWaveAt=7+Math.random()*7;
+  // Las olas que pueden derribar al jugador solo actúan mar adentro,
+  // cuando el nivel del agua ya supera aproximadamente su cintura.
+  let waveImpactCooldown=0, waveImpactPending=null, nextBigWaveAt=22+Math.random()*18;
   const foamPool=[];
   const foamMat=new THREE.MeshBasicMaterial({color:0xf3fbff,transparent:true,opacity:.72,depthWrite:false,side:THREE.DoubleSide});
   const foamGeo=new THREE.CircleGeometry(1,9);
@@ -1070,18 +1072,20 @@ function create(scene, renderer, opts = {}) {
     waveImpactCooldown=Math.max(0,waveImpactCooldown-safeDt);
     const shelteredInCave = typeof api.isInsideCave === 'function' && api.isInsideCave(pp.x, pp.z);
     const shoreDist=pp.z-shoreZ(pp.x), swell=(Math.sin(safeTime*.47+pp.x*.065)+.32*Math.sin(safeTime*.91+pp.x*.12))*(1+storm*.34);
-    const inWaterReach=!shelteredInCave && shoreDist>-4.8 && shoreDist<2.8;
+    const waistSubmerged=pp.y<=-.95; // El mar llega por encima del ombligo (superficie del agua: y=0).
+    const inWaterReach=!shelteredInCave && waistSubmerged && shoreDist>-20.5 && shoreDist<-12;
     const bigSetDue=safeTime>=nextBigWaveAt;
-    const ordinaryHit=swell>(1.16-storm*.22) && shoreDist>-2.8 && shoreDist<2.4;
+    // Las olas comunes son poco frecuentes; las grandes llegan con bastante separación.
+    const ordinaryHit=swell>(1.24-storm*.18) && Math.random()<.12;
     if(!shelteredInCave && waveImpactCooldown<=0 && inWaterReach && (bigSetDue || ordinaryHit)){
-      const deepFactor=clamp((-shoreDist+1.2)/5.5,0,1);
-      const strength=bigSetDue ? clamp(.72+Math.random()*.62+deepFactor*.28+storm*.38,.72,1.9) : clamp((swell-(1.16-storm*.22))*1.45+storm*.12,.16,1.02);
-      const dirX=clamp(-.22*Math.sin(pp.x*.07+safeTime*.2)+(.5-Math.random())*.10,-.30,.30),dirZ=shoreDist<-.5?1:.86;
-      pp.z+=.12+strength*.42;
+      const deepFactor=clamp((-shoreDist-12)/8.5,0,1);
+      const strength=bigSetDue ? clamp(.72+Math.random()*.48+deepFactor*.22+storm*.24,.72,1.55) : clamp((swell-(1.24-storm*.18))*1.15+storm*.08,.12,.78);
+      const dirX=clamp(-.22*Math.sin(pp.x*.07+safeTime*.2)+(.5-Math.random())*.10,-.30,.30),dirZ=1;
+      pp.z+=.12+strength*.32;
       waveImpactPending={strength,dirX,dirZ,x:pp.x,z:pp.z-.15,big:bigSetDue};
       burstFoam(pp.x,pp.z-.15,strength,safeTime);
-      waveImpactCooldown=bigSetDue?(6.5-storm*1.8)+Math.random()*(3.5-storm*.8):(4.2-storm*.7)+Math.random()*(2.8-storm*.5);
-      if(bigSetDue)nextBigWaveAt=safeTime+(10-storm*3)+Math.random()*(13-storm*4);
+      waveImpactCooldown=bigSetDue?14+Math.random()*9:10+Math.random()*8;
+      if(bigSetDue)nextBigWaveAt=safeTime+28+Math.random()*24;
     }
     updateFoam(safeDt);
     if (camera?.position) dome.position.copy(camera.position);
