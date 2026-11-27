@@ -4,15 +4,15 @@
 export function createOceanLife(THREE, scene, beach, loader) {
   const entries = [];
   const specs = [
-    {file:'crab.glb',count:1,size:1.15,shore:5,positions:[[-72,0]]},
-    {file:'dolphin.glb',count:1,size:3.1,shore:19,positions:[[65,0]]},
-    {file:'fish-school.glb',count:3,size:2.15,shore:13,positions:[[-92,0],[8,0],[102,0]]},
-    {file:'jellyfish.glb',count:1,size:1.25,shore:15,positions:[[-28,0]]},
-    {file:'manta-ray.glb',count:1,size:3.4,shore:27,positions:[[38,0]]},
-    {file:'octopus.glb',count:1,size:1.65,shore:9,positions:[[-112,0]]},
-    {file:'reef-fish.glb',count:1,size:1.25,shore:8,positions:[[78,0]]},
-    {file:'sea-turtle.glb',count:1,size:2.1,shore:23,positions:[[-52,0]]},
-    {file:'whale.glb',count:1,size:7.2,shore:43,positions:[[0,0]]}
+    {file:'crab.glb',count:1,size:1.15,shore:22,positions:[[-72,0]]},
+    {file:'dolphin.glb',count:1,size:3.1,shore:30,positions:[[65,0]]},
+    {file:'fish-school.glb',count:3,size:2.15,shore:5,positions:[[-92,0],[8,0],[102,0]]},
+    {file:'jellyfish.glb',count:1,size:1.25,shore:23,positions:[[-28,0]]},
+    {file:'manta-ray.glb',count:1,size:3.4,shore:35,positions:[[38,0]]},
+    {file:'octopus.glb',count:1,size:1.65,shore:24,positions:[[-112,0]]},
+    {file:'reef-fish.glb',count:1,size:1.25,shore:5,positions:[[78,0]]},
+    {file:'sea-turtle.glb',count:1,size:2.1,shore:28,positions:[[-52,0]]},
+    {file:'whale.glb',count:1,size:7.2,shore:50,positions:[[0,0]]}
   ];
   let disposed=false;
   for (const spec of specs) {
@@ -54,7 +54,7 @@ export function createOceanLife(THREE, scene, beach, loader) {
         root.visible=true;
         const mixer=gltf.animations?.length?new THREE.AnimationMixer(model):null;
         if(mixer)gltf.animations.forEach(clip=>mixer.clipAction(clip).play());
-        entries.push({root,body,model,mixer,x,z:root.position.z,phase:(i+1)*1.73+spec.shore*.17,speed:.12+(i%3)*.035,turn:(i%2?1:-1),file:spec.file});
+        entries.push({root,body,model,mixer,x,z:root.position.z,shoreDistance:spec.shore,phase:(i+1)*1.73+spec.shore*.17,speed:.12+(i%3)*.035,turn:(i%2?1:-1),file:spec.file});
       }
       console.info('[Fauna marina] Modelo cargado:',spec.file,'ejemplares:',spec.count);
     },undefined,error=>console.error('[Fauna marina] Error al cargar '+assetUrl+':',error));
@@ -64,7 +64,7 @@ export function createOceanLife(THREE, scene, beach, loader) {
       if(e.mixer)e.mixer.update(dt);
       const t=time*e.speed+e.phase;
       e.root.position.x=e.x+Math.sin(t)*2.3;
-      e.root.position.z=e.z+Math.cos(t*.73)*1.7;
+      e.root.position.z=beach.shoreZ(e.root.position.x)-e.shoreDistance+Math.cos(t*.73)*(e.shoreDistance<=6?1.7:.65);
       e.root.position.y=-.76+(e.file==='jellyfish.glb'?Math.sin(time*1.45+e.phase)*.34:Math.sin(time*1.1+e.phase)*.10);
       e.root.rotation.y=Math.sin(t*.48)*.24*e.turn;
       if(e.file==='jellyfish.glb')e.model.rotation.z=Math.sin(time*1.2+e.phase)*.12;
