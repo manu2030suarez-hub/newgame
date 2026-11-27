@@ -760,6 +760,14 @@ function create(scene, renderer, opts = {}) {
     if (grnd() > p) continue;
     grassList.push({ x, z, s: .7 + grnd() * .7, r: grnd() * Math.PI });
   }
+  // Refuerzo de cobertura verde en el claro costero y el borde del bosque.
+  for (let tries = 0; grassList.length < 4650 && tries < 14000; tries++) {
+    const x = 22 + grnd() * 146, d = 7 + grnd() * 45, z = shoreZ(x) + d;
+    const mountainClear = ss(104, 132, Math.hypot(x - 76, z - 82));
+    const density = (.58 + .42 * fbm2(x * .075, z * .075)) * mountainClear;
+    if (grnd() > density) continue;
+    grassList.push({ x, z, s: .62 + grnd() * .78, r: grnd() * Math.PI });
+  }
   const grass = new THREE.InstancedMesh(gg, grassMat, grassList.length);
   grassList.forEach((p, i) => {
     q.setFromUnitVectors(terrainUp, terrainNormalAt(p.x, p.z)); q.multiply(new THREE.Quaternion().setFromAxisAngle(terrainUp, p.r)); ps.set(p.x, terrainH(p.x, p.z) - .02, p.z); sc.set(p.s, p.s, p.s);
@@ -864,7 +872,9 @@ function create(scene, renderer, opts = {}) {
   // Plantas GLB reales aportadas para la nueva zona selvática.
   // Se cargan una vez y se clonan con variaciones de escala/rotación para cuidar el rendimiento.
   const jungleAssetLoader = opts.gltfLoader || new GLTFLoader();
-  function scatterJungleAsset(gltf, fileName, count, minHeight, maxHeight, seed) {
+  // Espaciado compartido entre cargas asíncronas: evita que los árboles se amontonen.
+  const forestTreeSpots = [], forestPlantSpots = [];
+  function scatterJungleAsset(gltf, fileName, count, minHeight, maxHeight, seed, isTree = false) {
     const source = gltf.scene;
     source.name = fileName.replace('.glb', '-source');
     source.updateMatrixWorld(true);
@@ -874,15 +884,19 @@ function create(scene, renderer, opts = {}) {
     const plantGroup = new THREE.Group();
     plantGroup.name = fileName.replace('.glb', '-scatter');
     let placed = 0, tries = 0;
-    while (placed < count && tries < count * 24) {
+    const spacing = isTree ? 6.4 : 1.25;
+    const spots = isTree ? forestTreeSpots : forestPlantSpots;
+    while (placed < count && tries < count * 70) {
       tries++;
-      const x = 28 + rand() * 132;
-      const shoreOffset = 7 + rand() * 34;
+      const x = 22 + rand() * 146;
+      const shoreOffset = 9 + rand() * 43;
       const z = shoreZ(x) + shoreOffset;
       // Solo costa baja y arena: descartar laderas, montaña y zonas de terreno empinado.
       if (Math.hypot(terrainH(x + 1, z) - terrainH(x - 1, z), terrainH(x, z + 1) - terrainH(x, z - 1)) > 1.25) continue;
       if (Math.hypot(x - 94, z - (shoreZ(94) + 5.5)) < 12) continue;
       if (Math.hypot(x - 102, z - (shoreZ(102) + 7.5)) < 5.5) continue;
+      if (spots.some(p => Math.hypot(p.x - x, p.z - z) < spacing)) continue;
+      if (!isTree && forestTreeSpots.some(p => Math.hypot(p.x - x, p.z - z) < 1.8)) continue;
       const plant = source.clone(true);
       const targetHeight = minHeight + rand() * (maxHeight - minHeight);
       const scale = targetHeight / sourceHeight;
@@ -894,6 +908,31 @@ function create(scene, renderer, opts = {}) {
       plant.updateMatrixWorld(true);
       const bounds = new THREE.Box3().setFromObject(plant);
       plant.position.set(x, terrainH(x, z) - bounds.min.y, z);
+      plant.updateMatrixWorld(true);
+      const placedBounds = new THREE.Box3().setFromObject(plant);
+      const placedSize = placedBounds.getSize(new THREE.Vector3());
+      if (isTree) {
+        // El GLB se mide ya escalado y rotado. La colisión usa el tronco bajo,
+        // nunca la copa completa, para que las ramas no bloqueen el paso.
+        const treeHeight = Math.max(.1, placedSize.y);
+        let trunkRadius = THREE.MathUtils.clamp(treeHeight * .035, .30, .78);
+        let trunkX = x, trunkZ = z, trunkSamples = 0;
+        plant.traverse(obj => {
+          if (!obj.isMesh || !obj.geometry) return;
+          const meshBox = new THREE.Box3().setFromObject(obj);
+          const meshSize = meshBox.getSize(new THREE.Vector3());
+          const meshCenter = meshBox.getCenter(new THREE.Vector3());
+          const horizontal = Math.max(meshSize.x, meshSize.z);
+          if (meshCenter.y <= placedBounds.min.y + treeHeight * .46 &&
+              meshSize.y > horizontal * 1.15 && horizontal < treeHeight * .32) {
+            trunkRadius = Math.max(trunkRadius, Math.min(.95, horizontal * .42));
+            trunkX += meshCenter.x; trunkZ += meshCenter.z; trunkSamples++;
+          }
+        });
+        if (trunkSamples) { trunkX /= trunkSamples + 1; trunkZ /= trunkSamples + 1; }
+        colliders.push({ x: trunkX, z: trunkZ, r: trunkRadius, bottom: placedBounds.min.y, top: placedBounds.max.y, glbAuto: fileName });
+      }
+      spots.push({ x, z });
       plant.traverse(obj => {
         if (!obj.isMesh) return;
         obj.castShadow = true;
@@ -947,7 +986,7 @@ function create(scene, renderer, opts = {}) {
   ];
   for (const [path,count,minH,maxH,seed] of forestAssets) {
     jungleAssetLoader.load(new URL('./'+path, import.meta.url).href,
-      gltf => scatterJungleAsset(gltf, path.split('/').pop(), count, minH, maxH, seed),
+      gltf => scatterJungleAsset(gltf, path.split('/').pop(), count, minH, maxH, seed, path.startsWith('arboles/') && !path.includes('tree-fern')),
       undefined, error => console.error('No se pudo cargar vegetación '+path,error));
   }
 
