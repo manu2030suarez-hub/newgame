@@ -473,7 +473,7 @@ async function initializeWorld(){
  camera.position.set(spawnX,spawnY+4.2,spawnZ+7.5);camera.lookAt(spawnX,spawnY+1.1,spawnZ);$('loading').style.display='none';
 }
 
-loader.load(MODEL_PATH, gltf => {
+loader.load(MODEL_PATH, async gltf => {
   character = gltf.scene;
   character.traverse(o => {
     if (o.isBone) bones.push(o);
@@ -516,16 +516,23 @@ loader.load(MODEL_PATH, gltf => {
   // Animaciones del archivo (walk / run)
   mixer = new THREE.AnimationMixer(character);
   for (const clip of gltf.animations || []) actions[clip.name.toLowerCase()] = mixer.clipAction(clip);
-  // Carga las animaciones editadas desde la página editar.html (mismo origen/navegador).
+  // GitHub es la fuente compartida de animaciones y poses; localStorage queda como respaldo.
+  let savedAnimationEdits = {};
+  try { savedAnimationEdits = JSON.parse(localStorage.getItem('survivalPlaya.animationEdits.v1') || '{}'); } catch (e) {}
   try {
-    const savedAnimationEdits = JSON.parse(localStorage.getItem('survivalPlaya.animationEdits.v1') || '{}');
-    for (const edit of Object.values(savedAnimationEdits)) {
-      if (!edit?.clip?.tracks?.length) continue;
-      try { const customClip = THREE.AnimationClip.parse(edit.clip); actions[customClip.name.toLowerCase()] = mixer.clipAction(customClip); }
-      catch (clipError) { console.warn('No se pudo cargar una animación editada:', clipError); }
-    }
-  } catch (storageError) { console.warn('No se pudieron leer las animaciones guardadas:', storageError); }
+    const response = await fetch('./animation-edits.json', {cache:'no-store'});
+    if (response.ok) savedAnimationEdits = {...savedAnimationEdits, ...(await response.json())};
+  } catch (e) { console.warn('No se pudieron descargar las animaciones de GitHub; se usa el respaldo local.', e); }
+  for (const edit of Object.values(savedAnimationEdits)) {
+    if (!edit?.clip?.tracks?.length) continue;
+    try { const customClip = THREE.AnimationClip.parse(edit.clip); actions[customClip.name.toLowerCase()] = mixer.clipAction(customClip); }
+    catch (clipError) { console.warn('No se pudo cargar una animación editada:', clipError); }
+  }
   try { savedHandPoses = JSON.parse(localStorage.getItem('survivalPlaya.handPoses.v1') || '{}'); } catch (e) { savedHandPoses = {}; }
+  try {
+    const response = await fetch('./hand-poses.json', {cache:'no-store'});
+    if (response.ok) savedHandPoses = {...savedHandPoses, ...(await response.json())};
+  } catch (e) { console.warn('No se pudieron descargar las poses de GitHub; se usa el respaldo local.', e); }
   walkClip = actions.walk ? 'walk' : null; runClip = actions.run ? 'run' : null;
 
   // Huesos para el salto procedural
