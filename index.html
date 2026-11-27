@@ -440,7 +440,7 @@ async function initializeWorld(){
  if(worldInitialized)return;
  $('loadmsg').textContent='Cargando la isla…'; $('loading').style.display='flex';
  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
- beach=BeachWorld.create(scene,renderer,{sun,hemi,gltfLoader:loader});try{createAbandonedVillage(THREE,scene,beach);}catch(e){console.warn('Pueblo abandonado no disponible:',e);}try{sharkSystem=createSharkSystem(THREE,scene,beach,{gltfLoader:loader,damagePlayer:(amount,message)=>damagePlayer(amount,message)});}catch(e){console.warn('Tiburones no disponibles:',e);}try{oceanLife=createOceanLife(THREE,scene,beach,loader);}catch(e){console.warn('Fauna marina no disponible:',e);}try{cave=createCave(THREE,scene,beach,{x:-48});}catch(e){console.warn('Cueva no disponible',e);}
+ beach=BeachWorld.create(scene,renderer,{sun,hemi,gltfLoader:loader});try{window.abandonedVillage=createAbandonedVillage(THREE,scene,beach,loader);}catch(e){console.warn('Pueblo abandonado no disponible:',e);}try{sharkSystem=createSharkSystem(THREE,scene,beach,{gltfLoader:loader,damagePlayer:(amount,message)=>damagePlayer(amount,message)});}catch(e){console.warn('Tiburones no disponibles:',e);}try{oceanLife=createOceanLife(THREE,scene,beach,loader);}catch(e){console.warn('Fauna marina no disponible:',e);}try{cave=createCave(THREE,scene,beach,{x:-48});}catch(e){console.warn('Cueva no disponible',e);}
  scatterInitialResources();
  try{setupFish();}catch(e){console.warn('Peces:',e);}
  try{physics=await createPhysicsSystem(THREE,player,beach);console.info('[Física V24] Rapier inicializado',physics.stats);}catch(e){console.warn('Rapier no disponible; se usa controlador de respaldo.',e);physics=null;}
@@ -467,7 +467,7 @@ async function initializeWorld(){
 });
  worldInitialized=true;
  // Inicio sobre arena firme, junto a la orilla y cerca del naufragio.
- const spawnX=-136,spawnZ=beach.shoreZ(-136)+43;
+ const spawnX=106,spawnZ=138;
  const spawnY=beach.surfaceHeightAt?beach.surfaceHeightAt(spawnX,spawnZ):beach.heightAt(spawnX,spawnZ);
  player.position.set(spawnX,spawnY+.035,spawnZ);player.rotation.set(0,0,0);yaw=0;pitch=-.12;onGround=true;vy=0;fallMode='none';
  wildlife.populateIsland?.(6);
