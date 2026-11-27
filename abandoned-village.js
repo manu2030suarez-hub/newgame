@@ -103,12 +103,13 @@ export function createAbandonedVillage(THREE, scene, beach) {
     // Techo a dos aguas con chapa corrugada oxidada.
     const roofAngle=Math.atan2(1.45,w*.57);
     const roofLen=Math.hypot(w*.57,1.45);
-    box(house,rust,-w*.25,wallTop+.68,0,roofLen,.16,d+1.0,0,0,-roofAngle);
-    box(house,rust,w*.25,wallTop+.68,0,roofLen,.16,d+1.0,0,0,roofAngle);
+    const roofY=wallTop+(floors===2?1.05:.68);
+    box(house,rust,-w*.25,roofY,0,roofLen,.16,d+1.0,0,0,-roofAngle);
+    box(house,rust,w*.25,roofY,0,roofLen,.16,d+1.0,0,0,roofAngle);
     // Ondas metálicas visibles en los faldones.
     for(let side of [-1,1]) for(let k=0;k<Math.floor((d+1)/.34);k++) {
       const zz=-d/2-.35+k*.34;
-      box(house,darkWood,side*w*.25,wallTop+.76,zz,roofLen*.98,.035,.035,0,0,side*roofAngle);
+      box(house,darkWood,side*w*.25,roofY+.08,zz,roofLen*.98,.035,.035,0,0,side*roofAngle);
     }
     // Aleros, porche y escalones.
     box(house,darkWood,0,wallTop+.05,d/2+.65,w+.8,.18,.22);
@@ -125,8 +126,13 @@ export function createAbandonedVillage(THREE, scene, beach) {
       box(house,wood,0,h+1.98,-d/2,w,.22,d);
       box(house,wood,-w/2,h+1.98,0,.22,wallTop-.35,d);
       box(house,wood,w/2,h+1.98,0,.22,wallTop-.35,d);
-      box(house,rust,-w*.25,wallTop+1.05,0,roofLen,.16,d+1,0,0,-roofAngle);
-      box(house,rust,w*.25,wallTop+1.05,0,roofLen,.16,d+1,0,0,roofAngle);
+      box(house,wood,-w*.25,h+1.98,d/2,(w*.5),wallTop-.35,.22);
+      box(house,wood,w*.25,h+1.98,d/2,(w*.5),wallTop-.35,.22);
+      for(const wx of [-w*.25,w*.25]) {
+        box(house,glass,wx,h+2.05,d/2+.13,1.05,1.0,.035);
+        box(house,darkWood,wx,h+2.58,d/2+.18,1.28,.12,.12);
+        box(house,darkWood,wx,h+1.52,d/2+.18,1.28,.12,.12);
+      }
     }
     // Colisión por tramos: permite entrar por el hueco de la puerta.
     const c=Math.cos(spec.rot||0),s=Math.sin(spec.rot||0);
